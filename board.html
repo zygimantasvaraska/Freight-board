@@ -808,7 +808,7 @@ function App(){
                               <option value="">— Assign Driver —</option>
                               {DRIVERS.map(d=><option key={d} value={d}>{d}</option>)}
                             </select>
-                            {rc2===1&&(
+                            {(
                               <div style={{display:"flex",gap:"2px",marginBottom:"2px"}}>
                                 <select value={group.groupTruck||""} onChange={e=>setGroup(group.id,"groupTruck",e.target.value)} style={{...IN({cursor:"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTruck?"#000000":"#6b7280",background:"transparent",border:"1px solid #bfdbfe",borderRadius:"3px",padding:"1px"}}>
                                   <option value="">🚚—</option>
