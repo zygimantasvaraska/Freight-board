@@ -205,6 +205,9 @@ function App(){
   const[searchResults,setSearchResults]=useState([]);
   const[searchIdx,setSearchIdx]=useState(0);
   const searchRef=useRef(null);
+  const[showLegend,setShowLegend]=useState(false);
+  const dragGroupIdx=useRef(null);
+  const[dragOverIdx,setDragOverIdx]=useState(null);
 
   const today=useMemo(()=>{const d=new Date();d.setHours(0,0,0,0);return d;},[]);
   const tomorrow=useMemo(()=>{const d=new Date(today);d.setDate(d.getDate()+1);return d;},[today]);
@@ -524,6 +527,39 @@ function App(){
       </div>
     )}
 
+    {/* ── COLOR LEGEND ── */}
+    {showLegend&&(
+      <div style={{position:"fixed",top:"60px",right:"16px",zIndex:2000,background:"#1a2e50",borderRadius:"12px",boxShadow:"0 8px 40px rgba(0,0,0,0.4)",border:"1px solid #2d4a7a",padding:"14px 16px",width:"220px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
+          <span style={{color:"#fff",fontWeight:"700",fontSize:"12px"}}>🎨 Color Legend</span>
+          <button onClick={()=>setShowLegend(false)} style={{background:"transparent",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:"16px",lineHeight:1}}>×</button>
+        </div>
+        {[
+          ["#86efac","#16a34a","Delivered / Loaded"],
+          ["#fb923c","#c2410c","In Transit / Dispatched"],
+          ["#c4b5fd","#6d28d9","Dock / Yard"],
+          ["#fde047","#ca8a04","Picked Up / Today Pickup"],
+          ["#f87171","#b91c1c","Tomorrow / Future Pickup"],
+          ["#dbeafe","#3b82f6","No Date / Past"],
+        ].map(([bg,stripe,label])=>(
+          <div key={label} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
+            <div style={{width:"14px",height:"28px",background:stripe,borderRadius:"2px",flexShrink:0}}/>
+            <div style={{flex:1,background:bg,borderRadius:"4px",padding:"4px 8px",fontSize:"11px",fontWeight:"600",color:"#000"}}>{label}</div>
+          </div>
+        ))}
+        <div style={{marginTop:"10px",paddingTop:"8px",borderTop:"1px solid #2d4a7a"}}>
+          <div style={{fontSize:"10px",color:"#94a3b8",fontWeight:"600",marginBottom:"5px"}}>QUICK STATUS BUTTONS</div>
+          {[["PU","Picked Up","#ca8a04"],["IT","In Transit","#c2410c"],["DK","Dock","#6d28d9"],["LD","Loaded","#166534"],["DL","Delivered","#166534"]].map(([lbl,val,fg])=>(
+            <div key={lbl} style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px"}}>
+              <span style={{fontSize:"10px",fontWeight:"800",padding:"1px 6px",border:`1px solid ${fg}`,borderRadius:"3px",background:fg,color:"#fff",minWidth:"24px",textAlign:"center"}}>{lbl}</span>
+              <span style={{fontSize:"11px",color:"#cbd5e1"}}>{val}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:"8px",paddingTop:"8px",borderTop:"1px solid #2d4a7a",fontSize:"10px",color:"#64748b"}}>💡 Drag trailer header rows to reorder</div>
+      </div>
+    )}
+
     {/* ── SEARCH BAR ── */}
     {showSearch&&(
       <div style={{position:"fixed",top:"60px",left:"50%",transform:"translateX(-50%)",zIndex:2000,background:"#fff",borderRadius:"12px",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",border:"1px solid #e2e8f0",padding:"12px 16px",width:"min(600px,95vw)"}}>
@@ -623,6 +659,7 @@ function App(){
         {!isViewer&&<button onClick={()=>setShowNotif(true)} style={{background:notifications.length>0?"#dc2626":"#1e3a5f",border:"1px solid #374151",color:"#fff",padding:"4px 12px",borderRadius:"6px",fontSize:"10px",fontWeight:"600",cursor:"pointer",position:"relative"}}>
           🔔{notifications.length>0&&<span style={{background:"#fbbf24",color:"#000",borderRadius:"50%",width:"16px",height:"16px",fontSize:"9px",fontWeight:"800",display:"inline-flex",alignItems:"center",justifyContent:"center",marginLeft:"4px"}}>{notifications.length}</span>}
         </button>}
+        <button onClick={()=>setShowLegend(l=>!l)} style={{background:"#1e3a5f",border:"1px solid #374151",color:"#e2e8f0",padding:"4px 12px",borderRadius:"6px",fontSize:"10px",fontWeight:"600",cursor:"pointer"}}>🎨 Legend</button>
         <button onClick={()=>{setShowSearch(s=>{if(!s)setTimeout(()=>searchRef.current?.focus(),50);return true;});}} style={{background:"#1e3a5f",border:"1px solid #374151",color:"#93c5fd",padding:"4px 12px",borderRadius:"6px",fontSize:"10px",fontWeight:"600",cursor:"pointer"}}>🔍 Search <span style={{opacity:.5,fontSize:"9px"}}>(Ctrl+F)</span></button>
         <button onClick={()=>setAppMode(null)} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.2)",color:"rgba(255,255,255,0.5)",padding:"4px 10px",borderRadius:"6px",fontSize:"10px",cursor:"pointer"}}>⏻ Exit</button>
       </div>
@@ -708,7 +745,25 @@ function App(){
               return(
                 <Fragment key={group.id}>
                   {/* Trailer header */}
-                  <tr style={{borderTop:gi>0?"3px solid #1a2e50":"none"}}>
+                  <tr
+                    draggable={!isViewer}
+                    onDragStart={()=>{dragGroupIdx.current=gi;}}
+                    onDragOver={e=>{e.preventDefault();setDragOverIdx(gi);}}
+                    onDragLeave={()=>setDragOverIdx(null)}
+                    onDrop={()=>{
+                      const from=dragGroupIdx.current;
+                      const to=gi;
+                      if(from==null||from===to){setDragOverIdx(null);return;}
+                      setW("groups",(()=>{
+                        const arr=[...week.groups];
+                        const [moved]=arr.splice(from,1);
+                        arr.splice(to,0,moved);
+                        return arr;
+                      })());
+                      dragGroupIdx.current=null;
+                      setDragOverIdx(null);
+                    }}
+                    style={{borderTop:gi>0?"3px solid #1a2e50":"none",outline:dragOverIdx===gi?"3px solid #fbbf24":"none",cursor:isViewer?"default":"grab"}}>
                     <td colSpan={16} style={{padding:0}}>
                       <div style={{background:"linear-gradient(90deg,#1a2e50,#1e3a5f)",padding:"5px 10px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
                         <span style={{fontSize:"13px",fontWeight:"800",color:"#fff",background:"#2563eb",padding:"2px 10px",borderRadius:"5px",flexShrink:0}}>T{gi+1}</span>
@@ -786,11 +841,19 @@ function App(){
                             {[...TRAILER_NUMBERS,...customTrailers].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}
                           </select>
                         </td>
-                        <td style={T(rc.bg)}>
-                          <select value={load.status} onChange={e=>setLoad(group.id,load.id,"status",e.target.value)} style={IN({color:rc.tc,cursor:isViewer?"not-allowed":"pointer"})} disabled={isViewer}>
+                        <td style={T(rc.bg,{padding:"1px 3px",minWidth:"180px"})}>
+                          <select value={load.status} onChange={e=>setLoad(group.id,load.id,"status",e.target.value)} style={{...IN({color:rc.tc,cursor:"pointer"}),marginBottom:"2px",fontSize:"10px"}}>
                             <option value="">— Not set —</option>
                             {LOAD_STATUSES.map(s=><option key={s}>{s}</option>)}
                           </select>
+                          <div style={{display:"flex",gap:"2px",flexWrap:"wrap"}}>
+                            {[["PU","Picked Up","#ca8a04","#fef9c3"],["IT","In Transit","#c2410c","#fed7aa"],["DK","Dock","#6d28d9","#ede9fe"],["LD","Loaded","#166534","#dcfce7"],["DL","Delivered","#166534","#bbf7d0"]].map(([lbl,val,fg,bg2])=>(
+                              <button key={val} onClick={()=>setLoad(group.id,load.id,"status",load.status===val?"":val)}
+                                style={{fontSize:"9px",fontWeight:"800",padding:"1px 5px",border:`1px solid ${fg}`,borderRadius:"3px",cursor:"pointer",background:load.status===val?fg:bg2,color:load.status===val?"#fff":fg,transition:"all .1s"}}>
+                                {lbl}
+                              </button>
+                            ))}
+                          </div>
                         </td>
                         {/* Route info */}
 
