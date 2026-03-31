@@ -804,10 +804,14 @@ function App(){
                         {/* Group driver/status — rowspan */}
                         {isF&&(
                           <td rowSpan={rc2} style={{...TD(rc.bg,{textAlign:"center",verticalAlign:"middle",borderLeft:`2px solid ${rc.stripe}`,borderRight:`2px solid ${rc.stripe}`,padding:isSingle?"1px 4px":"6px"}),borderBottom:isL?"none":undefined}}>
-                            <select value={group.groupDriver||""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} style={{...IN({textAlign:"center",fontWeight:"700",fontSize:"11px",cursor:"pointer"}),color:group.groupDriver?"#1e40af":"#6b7280",background:"transparent",border:"1px solid #d1d5db",borderRadius:"4px",marginBottom:"3px"}}>
+                            <select value={DRIVERS.includes(group.groupDriver||"")?group.groupDriver||"":"__custom__"} onChange={e=>{if(e.target.value==="__custom__")setGroup(group.id,"groupDriver","");else setGroup(group.id,"groupDriver",e.target.value);}} style={{...IN({textAlign:"center",fontWeight:"700",fontSize:"11px",cursor:"pointer"}),color:group.groupDriver?"#1e40af":"#6b7280",background:"transparent",border:"1px solid #d1d5db",borderRadius:"4px",marginBottom:"2px"}}>
                               <option value="">— Assign Driver —</option>
+                              <option value="__custom__">✏ Type name manually</option>
                               {DRIVERS.map(d=><option key={d} value={d}>{d}</option>)}
                             </select>
+                            {(!DRIVERS.includes(group.groupDriver||""))&&(
+                              <input value={group.groupDriver||""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} placeholder="Type driver name..." style={{width:"100%",border:"1px solid #93c5fd",borderRadius:"4px",padding:"2px 6px",fontSize:"11px",fontWeight:"700",color:"#1e40af",background:"rgba(255,255,255,0.8)",marginBottom:"2px",fontFamily:"inherit",outline:"none"}}/>
+                            )}
                             {(
                               <div style={{display:"flex",gap:"2px",marginBottom:"2px"}}>
                                 <select value={group.groupTruck||""} onChange={e=>setGroup(group.id,"groupTruck",e.target.value)} style={{...IN({cursor:"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTruck?"#000000":"#6b7280",background:"transparent",border:"1px solid #bfdbfe",borderRadius:"3px",padding:"1px"}}>
