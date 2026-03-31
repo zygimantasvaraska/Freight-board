@@ -368,10 +368,10 @@ function App(){
   const setWeeksAndSave=useCallback((updater)=>{
     setWeeks(prev=>{
       const next=typeof updater==="function"?updater(prev):updater;
-      if(!isViewer)saveToSheets(next);
+      saveToSheets(next); // both admin and viewer can save driver assignments
       return next;
     });
-  },[isViewer,saveToSheets]);
+  },[saveToSheets]);
 
   const week=weeks[Math.min(activeWeek,weeks.length-1)];
   const computed=useMemo(()=>(week?.groups||[]).map(calcGroup),[week]);
@@ -804,17 +804,17 @@ function App(){
                         {/* Group driver/status — rowspan */}
                         {isF&&(
                           <td rowSpan={rc2} style={{...TD(rc.bg,{textAlign:"center",verticalAlign:"middle",borderLeft:`2px solid ${rc.stripe}`,borderRight:`2px solid ${rc.stripe}`,padding:isSingle?"1px 4px":"6px"}),borderBottom:isL?"none":undefined}}>
-                            <select value={group.groupDriver||""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} style={{...IN({textAlign:"center",fontWeight:"700",fontSize:"11px",cursor:isViewer?"not-allowed":"pointer"}),color:group.groupDriver?"#1e40af":"#6b7280",background:"transparent",border:isViewer?"1px solid #86efac":"1px solid #d1d5db",borderRadius:"4px",marginBottom:"3px"}} disabled={isViewer}>
+                            <select value={group.groupDriver||""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} style={{...IN({textAlign:"center",fontWeight:"700",fontSize:"11px",cursor:"pointer"}),color:group.groupDriver?"#1e40af":"#6b7280",background:"transparent",border:"1px solid #d1d5db",borderRadius:"4px",marginBottom:"3px"}}>
                               <option value="">— Assign Driver —</option>
                               {DRIVERS.map(d=><option key={d} value={d}>{d}</option>)}
                             </select>
                             {rc2===1&&(
                               <div style={{display:"flex",gap:"2px",marginBottom:"2px"}}>
-                                <select value={group.groupTruck||""} onChange={e=>setGroup(group.id,"groupTruck",e.target.value)} style={{...IN({cursor:isViewer?"not-allowed":"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTruck?"#000000":"#6b7280",background:"transparent",border:"1px solid #bfdbfe",borderRadius:"3px",padding:"1px"}} disabled={isViewer}>
+                                <select value={group.groupTruck||""} onChange={e=>setGroup(group.id,"groupTruck",e.target.value)} style={{...IN({cursor:"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTruck?"#000000":"#6b7280",background:"transparent",border:"1px solid #bfdbfe",borderRadius:"3px",padding:"1px"}}>
                                   <option value="">🚚—</option>
                                   {TRUCK_NUMBERS.map(t=><option key={t} value={t}>#{t}</option>)}
                                 </select>
-                                <select value={group.groupTrailer||""} onChange={e=>setGroup(group.id,"groupTrailer",e.target.value)} style={{...IN({cursor:isViewer?"not-allowed":"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTrailer?"#000000":"#6b7280",background:"transparent",border:"1px solid #e9d5ff",borderRadius:"3px",padding:"1px"}} disabled={isViewer}>
+                                <select value={group.groupTrailer||""} onChange={e=>setGroup(group.id,"groupTrailer",e.target.value)} style={{...IN({cursor:"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTrailer?"#000000":"#6b7280",background:"transparent",border:"1px solid #e9d5ff",borderRadius:"3px",padding:"1px"}}>
                                   <option value="">🚛—</option>
                                   {TRAILER_NUMBERS.map(t=><option key={t} value={t}>#{t}</option>)}
                                 </select>
