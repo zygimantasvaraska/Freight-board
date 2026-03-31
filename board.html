@@ -769,19 +769,19 @@ function App(){
                           }
                         </td>
                         <td style={T(rc.bg)}>
-                          <select value={load.driver||""} onChange={e=>setLoad(group.id,load.id,"driver",e.target.value)} style={IN({color:load.driver?"#c2410c":"#9ca3af",cursor:isViewer?"not-allowed":"pointer"})} disabled={isViewer}>
+                          <select value={load.driver||""} onChange={e=>setLoad(group.id,load.id,"driver",e.target.value)} style={IN({color:load.driver?"#c2410c":"#9ca3af",cursor:"pointer"})} >
                             <option value="">— Driver —</option>
                             {[...DRIVERS,...customDrivers].sort().map(d=><option key={d} value={d}>{d}</option>)}
                           </select>
                         </td>
                         <td style={T(rc.bg,{padding:"1px 2px"})}>
-                          <select value={load.truck||""} onChange={e=>setLoad(group.id,load.id,"truck",e.target.value)} style={IN({color:load.truck?"#1e40af":"#9ca3af",cursor:isViewer?"not-allowed":"pointer",fontWeight:load.truck?"700":"400",fontSize:"11px"})} disabled={isViewer}>
+                          <select value={load.truck||""} onChange={e=>setLoad(group.id,load.id,"truck",e.target.value)} style={IN({color:load.truck?"#1e40af":"#9ca3af",cursor:"pointer",fontWeight:load.truck?"700":"400",fontSize:"11px"})} >
                             <option value="">—</option>
                             {[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}
                           </select>
                         </td>
                         <td style={T(rc.bg,{padding:"1px 2px"})}>
-                          <select value={load.trailer||""} onChange={e=>setLoad(group.id,load.id,"trailer",e.target.value)} style={IN({color:load.trailer?"#7c3aed":"#9ca3af",cursor:isViewer?"not-allowed":"pointer",fontWeight:load.trailer?"700":"400",fontSize:"11px"})} disabled={isViewer}>
+                          <select value={load.trailer||""} onChange={e=>setLoad(group.id,load.id,"trailer",e.target.value)} style={IN({color:load.trailer?"#7c3aed":"#9ca3af",cursor:"pointer",fontWeight:load.trailer?"700":"400",fontSize:"11px"})} >
                             <option value="">—</option>
                             {[...TRAILER_NUMBERS,...customTrailers].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}
                           </select>
