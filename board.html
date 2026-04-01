@@ -471,15 +471,15 @@ function App(){
 
             {/* Navigation */}
             <div className="hdr-menu-section">Navigation</div>
-            {(isAdmin?[["📅","Weekly Boards","weeks","#2563eb","#eff6ff"],["🎯","Dispatchers","dispatchers","#7c3aed","#faf5ff"],["👥","Drivers","roster","#065f46","#ecfdf5"],["🚛","Equipment","equipment","#0369a1","#eff6ff"],["🔁","Crossdock","xdock","#7c3aed","#faf5ff"],["📦","Archive","archive","#4c1d95","#faf5ff"],["📊","Stats","stats","#b45309","#fffbeb"]]:isDispatcher?[["📅","Weekly Boards","weeks","#2563eb","#eff6ff"],["🔁","Crossdock","xdock","#7c3aed","#faf5ff"],["📊","Stats","stats","#b45309","#fffbeb"]]:[["🔁","Crossdock","xdock","#7c3aed","#faf5ff"],["📊","Stats","stats","#b45309","#fffbeb"]]).map((navItem)=>{const [ico,label,tab,col,activeBg]=navItem;return(
-              <button key={tab} className={`hdr-menu-item${activeTab===tab?" active":""}`}
-                style={{color:activeTab===tab?col:"#374151",background:activeTab===tab?activeBg:"transparent"}}
-                onClick={()=>{setActiveTab(tab);setShowHdrMenu(false);}}>
-                <span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>{ico}</span>
-                {label}
-                {tab==="archive"&&archivedWeeks.length>0 ? <span style={{marginLeft:"auto",fontSize:"9px",fontWeight:"700",color:"#7c3aed",background:"#ede9fe",padding:"1px 6px",borderRadius:"10px"}}>{archivedWeeks.length}</span> : null}
-              </button>
-            );})}
+            
+            {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="weeks"?" active":"")} style={{color:activeTab==="weeks"?"#2563eb":"#374151",background:activeTab==="weeks"?"#eff6ff":"transparent"}} onClick={()=>{setActiveTab("weeks");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>📅</span>Weekly Boards</button>}
+            {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="dispatchers"?" active":"")} style={{color:activeTab==="dispatchers"?"#7c3aed":"#374151",background:activeTab==="dispatchers"?"#faf5ff":"transparent"}} onClick={()=>{setActiveTab("dispatchers");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>🎯</span>Dispatchers</button>}
+            {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="roster"?" active":"")} style={{color:activeTab==="roster"?"#065f46":"#374151",background:activeTab==="roster"?"#ecfdf5":"transparent"}} onClick={()=>{setActiveTab("roster");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>👥</span>Drivers</button>}
+            {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="equipment"?" active":"")} style={{color:activeTab==="equipment"?"#0369a1":"#374151",background:activeTab==="equipment"?"#eff6ff":"transparent"}} onClick={()=>{setActiveTab("equipment");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>🚛</span>Equipment</button>}
+            {(isAdmin||isDispatcher)&&<button className={"hdr-menu-item"+(activeTab==="xdock"?" active":"")} style={{color:activeTab==="xdock"?"#7c3aed":"#374151",background:activeTab==="xdock"?"#faf5ff":"transparent"}} onClick={()=>{setActiveTab("xdock");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>🔁</span>Crossdock</button>}
+            {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="archive"?" active":"")} style={{color:activeTab==="archive"?"#4c1d95":"#374151",background:activeTab==="archive"?"#faf5ff":"transparent"}} onClick={()=>{setActiveTab("archive");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>📦</span>Archive{archivedWeeks.length>0 ? <span style={{marginLeft:"auto",fontSize:"9px",fontWeight:"700",color:"#7c3aed",background:"#ede9fe",padding:"1px 6px",borderRadius:"10px"}}>{archivedWeeks.length}</span> : null}</button>}
+            {(isAdmin||isDispatcher)&&<button className={"hdr-menu-item"+(activeTab==="stats"?" active":"")} style={{color:activeTab==="stats"?"#b45309":"#374151",background:activeTab==="stats"?"#fffbeb":"transparent"}} onClick={()=>{setActiveTab("stats");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>📊</span>Stats</button>}
+            {!isAdmin&&isDispatcher ? <button className={"hdr-menu-item"+(activeTab==="weeks"?" active":"")} style={{color:activeTab==="weeks"?"#2563eb":"#374151",background:activeTab==="weeks"?"#eff6ff":"transparent"}} onClick={()=>{setActiveTab("weeks");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>📅</span>Weekly Boards</button> : null}
 
             <div className="hdr-menu-divider"/>
 
