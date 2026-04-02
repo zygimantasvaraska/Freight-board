@@ -106,7 +106,7 @@ const GSS={"Pending":{bg:"#f9fafb",fg:"#6b7280",br:"#d1d5db"},"Driver assigned":
 
 let _uid=Date.now();
 const uid=()=>++_uid;
-const mkLoad=(o={})=>({id:uid(),sr:"",broker:"",pickup:"",delivery:"",product:"",pallets:"",weight:"",rate:"",driver:"",truck:"",trailer:"",status:"",notes:"",manualPickupMi:"",photos:[],...o});
+const mkLoad=(o={})=>({id:uid(),sr:"",broker:"",pickup:"",delivery:"",product:"",pallets:"",weight:"",rate:"",driver:"",truck:"",trailer:"",status:"",notes:"",manualPickupMi:"",manualLocalCharge:"",photos:[],...o});
 const mkGroup=()=>({id:uid(),tripMiles:"",groupDriver:"",groupTruck:"",groupTrailer:"",groupStatus:"Pending",groupNotes:"",loads:[mkLoad()]});
 const mkWeek=(label)=>({id:uid(),label:label||"New Week",groups:[mkGroup()],localDeliveries:[],crossdockDrops:[],accessorials:[],openSections:{main:true,local:false,xdrop:false,acc:false,otr:true}});
 const mkLocal=()=>({id:uid(),destination:"",trailer:"",truck:"",broker:"",loadNum:"",datetime:"",driver:"",notes:"",status:""});
@@ -114,7 +114,7 @@ const mkXDrop=()=>({id:uid(),location:"",trailer:"",truck:"",broker:"",loadNum:"
 const mkAcc=()=>({id:uid(),broker:"",loadNum:"",amount:"",type:"Detention",notes:"",status:""});
 
 function calcGroup(g){
-  const loads=g.loads.map(l=>{const{s,r}=parseSR(l.sr);const am=cityMiles(s);const um=(l.manualPickupMi!==""&&l.manualPickupMi!=null)?parseFloat(l.manualPickupMi):am;return{...l,shipper:s,receiver:r,pickupMiAuto:am,pickupMiUsed:um,localCharge:localCharge(um),tripPrice:parseFloat(l.rate)||0};});
+  const loads=g.loads.map(l=>{const{s,r}=parseSR(l.sr);const am=cityMiles(s);const um=(l.manualPickupMi!==""&&l.manualPickupMi!=null)?parseFloat(l.manualPickupMi):am;return{...l,shipper:s,receiver:r,pickupMiAuto:am,pickupMiUsed:um,localCharge:l.manualLocalCharge!==""&&l.manualLocalCharge!=null?parseFloat(l.manualLocalCharge):localCharge(um),tripPrice:parseFloat(l.rate)||0};});
   const sd=[...loads].sort((a,b)=>parseTS(a.delivery)-parseTS(b.delivery));
   const so={};sd.forEach((l,i)=>{so[l.id]=i+1;});
   const rcvrs=sd.map(l=>l.receiver).filter(Boolean);
@@ -757,7 +757,23 @@ function App(){
                         <td style={T(ROW_BG,{padding:"1px 2px"})}><select value={load.truck||""} onChange={e=>setLoad(group.id,load.id,"truck",e.target.value)} style={IN({color:load.truck?"#1e40af":"#9ca3af",cursor:"pointer",fontWeight:load.truck?"700":"400",fontSize:"11px"})}><option value="">—</option>{[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}</select></td>
                         <td style={T(ROW_BG,{padding:"1px 2px"})}><select value={load.trailer||""} onChange={e=>setLoad(group.id,load.id,"trailer",e.target.value)} style={IN({color:load.trailer?"#7c3aed":"#9ca3af",cursor:"pointer",fontWeight:load.trailer?"700":"400",fontSize:"11px"})}><option value="">—</option>{[...TRAILER_NUMBERS,...customTrailers].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}</select></td>
                         <td style={T(ROW_BG,{padding:"4px 6px",minWidth:"180px"})}><div style={{display:"flex",flexDirection:"column",gap:"4px"}}><div style={{position:"relative"}}><select value={load.status} onChange={e=>setLoad(group.id,load.id,"status",e.target.value)} style={{position:"absolute",inset:0,opacity:0,cursor:isAdmin?"pointer":"default",width:"100%",height:"100%",zIndex:2}} disabled={!isAdmin}><option value="">— Not set —</option>{LOAD_STATUSES.map(s=><option key={s}>{s}</option>)}</select>{(()=>{const ST={"Picked Up":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Dispatched":{bg:"#dbeafe",c:"#1e40af",bd:"#3b82f6"},"In Transit":{bg:"#ffedd5",c:"#9a3412",bd:"#f97316"},"Dock":{bg:"#ede9fe",c:"#5b21b6",bd:"#a78bfa"},"Yard":{bg:"#ede9fe",c:"#5b21b6",bd:"#a78bfa"},"Loaded":{bg:"#dcfce7",c:"#14532d",bd:"#22c55e"},"Delivered":{bg:"#dcfce7",c:"#14532d",bd:"#16a34a"}};let p;if(load.status){p=ST[load.status]||{bg:"#f1f5f9",c:"#475569",bd:"#94a3b8"};}else{const pd2=parsePickupDate(load.pickup);const pt2=pd2?pd2.getTime():null;if(pt2===today.getTime()){p={bg:"#fef9c3",c:"#713f12",bd:"#eab308"};}else if(pt2&&pt2>today.getTime()){p={bg:"#fee2e2",c:"#991b1b",bd:"#f87171"};}else{p={bg:"#f1f5f9",c:"#9ca3af",bd:"#e2e8f0"};}}return<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"5px",fontSize:"11px",fontWeight:"700",padding:"3px 10px",borderRadius:"5px",background:p.bg,color:p.c,border:`2px solid ${p.bd}`,whiteSpace:"nowrap",userSelect:"none"}}><span style={{width:"7px",height:"7px",borderRadius:"50%",background:p.bd,flexShrink:0}}/>{load.status||"— Not set —"}</span>;})()}</div><div style={{display:"flex",gap:"2px",flexWrap:"wrap"}}>{[["PU","Picked Up","#ca8a04","#fef9c3"],["IT","In Transit","#c2410c","#fed7aa"],["DK","Dock","#6d28d9","#ede9fe"],["LD","Loaded","#166534","#dcfce7"],["DL","Delivered","#166534","#bbf7d0"]].map((sbItem)=>{const [lbl,val,fg,bg2]=sbItem;return(<button key={val} onClick={()=>isAdmin&&setLoad(group.id,load.id,"status",load.status===val?"":val)} style={{fontSize:"9px",fontWeight:"800",padding:"1px 5px",border:`1px solid ${fg}`,borderRadius:"3px",cursor:isAdmin?"pointer":"default",background:load.status===val?fg:bg2,color:load.status===val?"#fff":fg,transition:"all .1s",opacity:isAdmin?1:0.5}}>{lbl}</button>);})}</div></div></td>
-                        <td style={T(ROW_BG,{verticalAlign:"middle",padding:"3px 6px"})}><div style={{display:"flex",flexDirection:"column",gap:"1px"}}>{load.localCharge!=null?(<><span style={{fontSize:"10px",color:"#92400e",fontWeight:"700"}}>${load.localCharge} local</span><span style={{fontSize:"9px",color:"#b45309"}}>{load.pickupMiUsed} mi</span></>):nMi?(<div style={{display:"flex",alignItems:"center",gap:"3px"}}><span style={{fontSize:"9px",color:"#f59e0b"}}>?</span><input value={load.manualPickupMi} type="number" placeholder="mi" onChange={e=>setLoad(group.id,load.id,"manualPickupMi",e.target.value)} style={{width:"44px",border:"1px solid #fbbf24",borderRadius:"3px",background:"#fffbeb",textAlign:"center",color:"#92400e",fontWeight:"600",padding:"1px 2px",fontSize:"11px"}} disabled={!isAdmin}/></div>):null}{load.tripPrice>0&&<span style={{fontSize:"10px",fontWeight:"700",color:"#1d4f9e"}}>${load.tripPrice.toLocaleString()}</span>}</div></td>
+                        <td style={T(ROW_BG,{verticalAlign:"middle",padding:"3px 6px"})}><div style={{display:"flex",flexDirection:"column",gap:"1px"}}>
+  {load.localCharge!=null?(
+    <div style={{display:"flex",alignItems:"center",gap:"2px"}}>
+      <span style={{fontSize:"10px",color:"#92400e",fontWeight:"700"}}>$</span>
+      <input value={load.manualLocalCharge!==""&&load.manualLocalCharge!=null?load.manualLocalCharge:load.localCharge} type="number" onChange={e=>setLoad(group.id,load.id,"manualLocalCharge",e.target.value)} style={{width:"44px",border:load.manualLocalCharge!==""&&load.manualLocalCharge!=null?"1px solid #f97316":"1px solid #fed7aa",borderRadius:"3px",background:load.manualLocalCharge!==""&&load.manualLocalCharge!=null?"#fff7ed":"#fef3c7",textAlign:"center",color:"#92400e",fontWeight:"700",padding:"1px 2px",fontSize:"11px"}} disabled={!isAdmin} title="Click to adjust local charge"/>
+      <span style={{fontSize:"9px",color:"#b45309"}}>local</span>
+      {load.manualLocalCharge!==""&&load.manualLocalCharge!=null ? <button onClick={()=>setLoad(group.id,load.id,"manualLocalCharge","")} style={{background:"none",border:"none",color:"#f97316",cursor:"pointer",fontSize:"10px",padding:"0",lineHeight:1}} title="Reset to auto">↺</button> : null}
+    </div>
+  ):nMi?(
+    <div style={{display:"flex",alignItems:"center",gap:"3px"}}>
+      <span style={{fontSize:"9px",color:"#f59e0b"}}>?</span>
+      <input value={load.manualPickupMi} type="number" placeholder="mi" onChange={e=>setLoad(group.id,load.id,"manualPickupMi",e.target.value)} style={{width:"44px",border:"1px solid #fbbf24",borderRadius:"3px",background:"#fffbeb",textAlign:"center",color:"#92400e",fontWeight:"600",padding:"1px 2px",fontSize:"11px"}} disabled={!isAdmin}/>
+    </div>
+  ):null}
+  {load.pickupMiUsed!=null&&<span style={{fontSize:"9px",color:"#b45309"}}>{load.pickupMiUsed} mi</span>}
+  {load.tripPrice>0&&<span style={{fontSize:"10px",fontWeight:"700",color:"#1d4f9e"}}>${load.tripPrice.toLocaleString()}</span>}
+</div></td>
                         {isF&&(<td rowSpan={rc2} style={{...TD(ROW_BG,{textAlign:"center",verticalAlign:"middle",borderLeft:"2px solid #bfdbfe",borderRight:"2px solid #bfdbfe",padding:isSingle?"1px 4px":"6px"}),borderBottom:isL?"none":undefined}}><select value={[...DRIVERS,...customDrivers].includes(group.groupDriver||"")?group.groupDriver||"":""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} style={{...IN({textAlign:"center",fontWeight:"700",fontSize:"11px",cursor:"pointer"}),color:group.groupDriver?"#1e40af":"#6b7280",background:"rgba(255,255,255,0.7)",border:"1px solid #bfdbfe",borderRadius:"4px",marginBottom:"2px"}}><option value="">— Assign Driver —</option>{[...DRIVERS,...customDrivers].sort().map(d=><option key={d} value={d}>{d}</option>)}</select><input value={group.groupDriver||""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} placeholder="Or type name..." style={{width:"100%",border:"1px solid #2d4a6e",borderRadius:"4px",padding:"1px 6px",fontSize:"10px",fontWeight:"700",color:"#1e40af",background:"rgba(255,255,255,0.7)",marginBottom:"2px",fontFamily:"inherit",outline:"none",textAlign:"center"}}/><div style={{display:"flex",gap:"2px",marginBottom:"2px"}}><select value={group.groupTruck||""} onChange={e=>setGroup(group.id,"groupTruck",e.target.value)} style={{...IN({cursor:"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTruck?"#000000":"#6b7280",background:"transparent",border:"1px solid #bfdbfe",borderRadius:"3px",padding:"1px"}}><option value="">🚚—</option>{[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}</select><select value={group.groupTrailer||""} onChange={e=>setGroup(group.id,"groupTrailer",e.target.value)} style={{...IN({cursor:"pointer",fontSize:"9px",fontWeight:"700"}),flex:1,color:group.groupTrailer?"#000000":"#6b7280",background:"transparent",border:"1px solid #e9d5ff",borderRadius:"3px",padding:"1px"}}><option value="">🚛—</option>{[...TRAILER_NUMBERS,...customTrailers].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=><option key={t} value={t}>#{t}</option>)}</select></div><select value={group.groupStatus} onChange={e=>isAdmin&&setGroup(group.id,"groupStatus",e.target.value)} style={{...IN({textAlign:"center",cursor:isAdmin?"pointer":"not-allowed",fontWeight:"700",fontSize:"10px"}),color:"#000000",background:"rgba(255,255,255,0.6)",borderRadius:"4px",padding:"2px",border:`1px solid ${gsSt.br}`}} disabled={!isAdmin}>{Object.keys(GSS).map(s=><option key={s}>{s}</option>)}</select></td>)}
                       </tr>
                     );
@@ -1042,28 +1058,31 @@ function App(){
         <button onClick={()=>{const name=prompt("Enter new driver name:");if(!name||!name.trim())return;const n=name.trim();if([...DRIVERS,...customDrivers].includes(n)){alert("Driver already exists.");return;}const updated=[...customDrivers,n];setCustomDrivers(updated);saveToSheets({weeks,customDrivers:updated});}} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"6px",padding:"5px 14px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>+ Add New Driver</button>
       </div>
       {(()=>{
-        // Compute per-driver stats — only In Transit and Delivered loads count
+        // Compute per-driver stats — group-based, only In Transit/Delivered groups count
         const driverStats={};
         weeks.forEach(w=>{
           (w.groups||[]).forEach(g=>{
             const calcG=calcGroup(g);
-            (calcG.loads||[]).forEach(l=>{
-              const loadStatus=l.status||"";
-              const groupStatus=g.groupStatus||"";
-              const isActive=loadStatus==="In Transit"||loadStatus==="Delivered"||groupStatus==="In Transit"||groupStatus==="Delivered";
-              if(!isActive)return;
-              const drivers=new Set();
-              if(l.driver&&l.driver.trim())drivers.add(l.driver.trim());
-              if(g.groupDriver&&g.groupDriver.trim())drivers.add(g.groupDriver.trim());
-              drivers.forEach(d=>{
-                if(!driverStats[d])driverStats[d]={loads:0,delivered:0,inTransit:0,gross:0,miles:0,weeks:new Set()};
-                const ds=driverStats[d];
-                ds.loads++;
-                if(loadStatus==="Delivered"||groupStatus==="Delivered"){ds.delivered++;ds.gross+=(parseFloat(l.rate)||0);}
-                if(loadStatus==="In Transit"||groupStatus==="In Transit")ds.inTransit++;
-                if(calcG.calcTripMi)ds.miles+=calcG.calcTripMi;
-                ds.weeks.add(w.label);
-              });
+            const groupStatus=g.groupStatus||"";
+            const isActive=groupStatus==="In Transit"||groupStatus==="Delivered";
+            if(!isActive)return;
+            // Drivers for this group
+            const drivers=new Set();
+            if(g.groupDriver&&g.groupDriver.trim())drivers.add(g.groupDriver.trim());
+            // Also any load-level drivers
+            (calcG.loads||[]).forEach(l=>{if(l.driver&&l.driver.trim())drivers.add(l.driver.trim());});
+            const net=(calcG.gross||0)-(calcG.loc||0);
+            const loadCount=(calcG.loads||[]).length;
+            const delivered=groupStatus==="Delivered";
+            drivers.forEach(d=>{
+              if(!driverStats[d])driverStats[d]={loads:0,trailers:0,delivered:0,inTransit:0,net:0,miles:0,weeks:new Set()};
+              const ds=driverStats[d];
+              ds.loads+=loadCount;
+              ds.trailers++;
+              if(delivered){ds.delivered+=loadCount;ds.net+=net;}
+              if(groupStatus==="In Transit")ds.inTransit+=loadCount;
+              if(calcG.calcTripMi)ds.miles+=calcG.calcTripMi;
+              ds.weeks.add(w.label);
             });
           });
         });
@@ -1085,9 +1104,9 @@ function App(){
                   <div style={{fontSize:"11px",color:"#64748b"}}>{myLoads.length} loads across {ds.weeks.size} weeks</div>
                 </div>
                 <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                  {ds.gross>0&&<span style={{fontSize:"12px",fontWeight:"700",color:"#059669",background:"#f0fdf4",border:"1px solid #86efac",padding:"3px 10px",borderRadius:"6px"}}>${ds.gross.toLocaleString()} gross</span>}
+                  {ds.net>0&&<span style={{fontSize:"12px",fontWeight:"700",color:"#059669",background:"#f0fdf4",border:"1px solid #86efac",padding:"3px 10px",borderRadius:"6px"}}>${ds.net.toLocaleString()} net</span>}
                   {ds.miles>0&&<span style={{fontSize:"12px",fontWeight:"700",color:"#2563eb",background:"#eff6ff",border:"1px solid #bfdbfe",padding:"3px 10px",borderRadius:"6px"}}>{Math.round(ds.miles)} mi</span>}
-                  {ds.delivered>0&&<span style={{fontSize:"12px",fontWeight:"700",color:"#166534",background:"#dcfce7",border:"1px solid #86efac",padding:"3px 10px",borderRadius:"6px"}}>{ds.delivered} delivered</span>}
+                  {ds.delivered>0&&<span style={{fontSize:"12px",fontWeight:"700",color:"#166534",background:"#dcfce7",border:"1px solid #86efac",padding:"3px 10px",borderRadius:"6px"}}>{ds.delivered} loads delivered</span>}
                   {ds.inTransit>0&&<span style={{fontSize:"12px",fontWeight:"700",color:"#5b21b6",background:"#ede9fe",border:"1px solid #c4b5fd",padding:"3px 10px",borderRadius:"6px"}}>{ds.inTransit} in transit</span>}
                 </div>
               </div>
@@ -1134,7 +1153,7 @@ function App(){
                         <span style={{fontSize:"18px"}}>🧑‍✈️</span>
                         <div style={{flex:1}}>
                           <div style={{fontSize:"12px",fontWeight:"700",color:"#166534"}}>{name}</div>
-                          <div style={{fontSize:"10px",color:"#059669"}}>{ds.loads} loads · ${ds.gross.toLocaleString()}</div>
+                          <div style={{fontSize:"10px",color:"#059669"}}>{ds.loads} loads{ds.net>0?" · $"+ds.net.toLocaleString()+" net":""}</div>
                         </div>
                         <button onClick={e=>{e.stopPropagation();if(!confirm(`Remove ${name}?`))return;const updated=customDrivers.filter(d=>d!==name);setCustomDrivers(updated);saveToSheets({weeks,customDrivers:updated});}} style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#dc2626",borderRadius:"4px",padding:"1px 6px",fontSize:"11px",cursor:"pointer"}}>×</button>
                       </div>
@@ -1158,7 +1177,7 @@ function App(){
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:"12px",fontWeight:"700",color:isActive?"#4c1d95":"#1a2e50",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{name}</div>
                       <div style={{fontSize:"10px",color:"#64748b",marginTop:"1px"}}>
-                        {ds.loads>0?`${ds.loads} loads · $${ds.gross.toLocaleString()}`:"No loads yet"}
+                        {ds.loads>0?`${ds.loads} loads${ds.net>0?" · $"+ds.net.toLocaleString()+" net":""}`:"No active loads"}
                         {ds.inTransit>0&&<span style={{color:"#7c3aed",fontWeight:"700"}}> · {ds.inTransit} rolling</span>}
                       </div>
                     </div>
