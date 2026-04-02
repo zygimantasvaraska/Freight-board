@@ -1042,21 +1042,30 @@ function App(){
         <button onClick={()=>{const name=prompt("Enter new driver name:");if(!name||!name.trim())return;const n=name.trim();if([...DRIVERS,...customDrivers].includes(n)){alert("Driver already exists.");return;}const updated=[...customDrivers,n];setCustomDrivers(updated);saveToSheets({weeks,customDrivers:updated});}} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"6px",padding:"5px 14px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>+ Add New Driver</button>
       </div>
       {(()=>{
-        // Compute per-driver stats across ALL weeks
-        const allLoads=weeks.flatMap(w=>(w.groups||[]).flatMap(g=>(g.loads||[]).map(l=>({...l,groupDriver:g.groupDriver,groupTruck:g.groupTruck,weekLabel:w.label,groupStatus:g.groupStatus,gross:g.gross,loc:g.loc,rpm:g.rpm,calcTripMi:g.calcTripMi}))));
+        // Compute per-driver stats — only In Transit and Delivered loads count
         const driverStats={};
-        allLoads.forEach(l=>{
-          const d=l.driver||l.groupDriver;
-          if(!d)return;
-          if(!driverStats[d])driverStats[d]={loads:0,delivered:0,inTransit:0,gross:0,miles:0,weeks:new Set(),lastLoad:null};
-          const ds=driverStats[d];
-          ds.loads++;
-          if(l.status==="Delivered")ds.delivered++;
-          if(l.status==="In Transit"||l.groupStatus==="In Transit")ds.inTransit++;
-          ds.gross+=(parseFloat(l.rate)||0);
-          if(l.calcTripMi)ds.miles+=l.calcTripMi;
-          ds.weeks.add(l.weekLabel);
-          if(!ds.lastLoad||parseTS(l.pickup)>parseTS(ds.lastLoad))ds.lastLoad=l.pickup;
+        weeks.forEach(w=>{
+          (w.groups||[]).forEach(g=>{
+            const calcG=calcGroup(g);
+            (calcG.loads||[]).forEach(l=>{
+              const loadStatus=l.status||"";
+              const groupStatus=g.groupStatus||"";
+              const isActive=loadStatus==="In Transit"||loadStatus==="Delivered"||groupStatus==="In Transit"||groupStatus==="Delivered";
+              if(!isActive)return;
+              const drivers=new Set();
+              if(l.driver&&l.driver.trim())drivers.add(l.driver.trim());
+              if(g.groupDriver&&g.groupDriver.trim())drivers.add(g.groupDriver.trim());
+              drivers.forEach(d=>{
+                if(!driverStats[d])driverStats[d]={loads:0,delivered:0,inTransit:0,gross:0,miles:0,weeks:new Set()};
+                const ds=driverStats[d];
+                ds.loads++;
+                if(loadStatus==="Delivered"||groupStatus==="Delivered"){ds.delivered++;ds.gross+=(parseFloat(l.rate)||0);}
+                if(loadStatus==="In Transit"||groupStatus==="In Transit")ds.inTransit++;
+                if(calcG.calcTripMi)ds.miles+=calcG.calcTripMi;
+                ds.weeks.add(w.label);
+              });
+            });
+          });
         });
         const allDrivers=[...DRIVERS,...customDrivers].sort();
         const filtered=allDrivers.filter(d=>!driverSearch||d.toLowerCase().includes(driverSearch.toLowerCase()));
@@ -1064,7 +1073,7 @@ function App(){
         // Driver detail view - all loads for selected driver
         if(selectedDriver){
           const dLoads=weeks.flatMap(w=>(w.groups||[]).flatMap(g=>(g.loads||[]).map(l=>({...l,weekLabel:w.label,groupDriver:g.groupDriver,groupTruck:g.groupTruck,groupTrailer:g.groupTrailer,groupStatus:g.groupStatus}))));
-          const myLoads=dLoads.filter(l=>(l.driver||l.groupDriver)===selectedDriver);
+          const myLoads=dLoads.filter(l=>(l.driver&&l.driver.trim()===selectedDriver)||(l.groupDriver&&l.groupDriver.trim()===selectedDriver));
           const ds=driverStats[selectedDriver]||{loads:0,delivered:0,gross:0,miles:0,weeks:new Set()};
           return(
             <div>
