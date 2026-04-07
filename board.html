@@ -300,6 +300,8 @@ function App(){
   const[showHdrMenu,setShowHdrMenu]=useState(false);
   const dragGroupIdx=useRef(null);
   const[dragOverIdx,setDragOverIdx]=useState(null);
+  const dragLoad=useRef(null); // {loadId, fromGroupId}
+  const dragOverTarget=useRef(null); // track via ref, no re-renders
 
   const today=useMemo(()=>{const d=new Date();d.setHours(0,0,0,0);return d;},[]);
   const tomorrow=useMemo(()=>{const d=new Date(today);d.setDate(d.getDate()+1);return d;},[today]);
@@ -457,6 +459,36 @@ function App(){
   const setGroup=(gid,f,v)=>setW("groups",week.groups.map(g=>g.id!==gid?g:{...g,[f]:v}));
   const addLoad=gid=>setW("groups",week.groups.map(g=>g.id!==gid?g:{...g,loads:[...g.loads,mkLoad()]}));
   const removeLoad=(gid,lid)=>setW("groups",week.groups.map(g=>{if(g.id!==gid)return g;const ls=g.loads.filter(l=>l.id!==lid);return{...g,loads:ls.length?ls:[mkLoad()]};}));
+  const moveLoad=(fromGid,toGid,lid,toPosition)=>{
+    if(fromGid===toGid){
+      // Reorder within same trailer
+      const g=week.groups.find(g=>g.id===fromGid);
+      if(!g)return;
+      const load=g.loads.find(l=>l.id===lid);
+      if(!load)return;
+      const others=g.loads.filter(l=>l.id!==lid);
+      others.splice(toPosition,0,load);
+      setW("groups",week.groups.map(gr=>gr.id!==fromGid?gr:{...gr,loads:others}));
+    } else {
+      // Move to different trailer
+      let movedLoad=null;
+      const newGroups=week.groups.map(gr=>{
+        if(gr.id===fromGid){
+          const ls=gr.loads.filter(l=>l.id!==lid);
+          movedLoad=gr.loads.find(l=>l.id===lid);
+          return{...gr,loads:ls.length?ls:[mkLoad()]};
+        }
+        return gr;
+      });
+      if(!movedLoad)return;
+      setW("groups",newGroups.map(gr=>{
+        if(gr.id!==toGid)return gr;
+        const ls=[...gr.loads];
+        ls.splice(toPosition,0,movedLoad);
+        return{...gr,loads:ls};
+      }));
+    }
+  };
   const addGroup=()=>setW("groups",[...week.groups,mkGroup()]);
   const removeGroup=gid=>{if(week.groups.length>1)setW("groups",week.groups.filter(g=>g.id!==gid));};
   const updSub=(sec,id,f,v)=>setW(sec,(week[sec]||[]).map(r=>r.id!==id?r:{...r,[f]:v}));
@@ -816,11 +848,14 @@ function App(){
                     const totalMi=parseFloat(group.tripMiles||0)||(group.autoTripMi||0);
                     const legPct=totalMi>0&&legMiVal>0?Math.min(Math.round(legMiVal/totalMi*100),100):0;
                     return(
-                      <tr key={load.id} id={`load-${load.id}`} style={{borderBottom:isL?"none":"1px solid #c7d9f0",lineHeight:isSingle?"1":"1.3",height:isSingle?"22px":undefined,maxHeight:isSingle?"22px":undefined}}>
+                      <tr key={load.id} id={`load-${load.id}`} draggable={isAdmin} onDragStart={e=>{if(!isAdmin)return;dragLoad.current={loadId:load.id,fromGroupId:group.id};e.dataTransfer.effectAllowed="move";e.currentTarget.style.opacity="0.5";e.currentTarget.style.outline="2px solid #3b82f6";}} onDragEnd={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.outline="";e.currentTarget.style.background="";dragLoad.current=null;}} onDragOver={e=>{if(!dragLoad.current)return;e.preventDefault();e.stopPropagation();e.currentTarget.style.background="rgba(37,99,235,0.18)";e.currentTarget.style.boxShadow="inset 0 -3px 0 #3b82f6";}} onDragLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.boxShadow="";}} onDrop={e=>{e.preventDefault();e.currentTarget.style.background="";e.currentTarget.style.boxShadow="";if(!dragLoad.current||!isAdmin)return;const dl=dragLoad.current;dragLoad.current=null;moveLoad(dl.fromGroupId,group.id,dl.loadId,li);}} style={{borderBottom:isL?"none":"1px solid #c7d9f0",lineHeight:isSingle?"1":"1.3",height:isSingle?"22px":undefined,maxHeight:isSingle?"22px":undefined,cursor:isAdmin?"grab":"default"}}>
                         <td style={{padding:0,background:"#93c5fd",width:"4px"}}/>
                         <td style={T(ROW_BG,{padding:"1px 2px",textAlign:"center"})}>{isAdmin&&<button onClick={()=>removeLoad(group.id,load.id)} style={{width:"18px",height:"18px",border:"1px solid #fca5a5",background:"#fee2e2",color:"#dc2626",borderRadius:"3px",fontSize:"11px",padding:0,lineHeight:1,cursor:"pointer"}}>×</button>}</td>
                         <td style={T(ROW_BG,{padding:"1px 2px",textAlign:"center"})}><button onClick={()=>setPhotoModal({...load,groupId:group.id})} style={{width:"22px",height:"22px",border:`1px solid ${(load.photos||[]).length>0?"#3b82f6":"#d1d5db"}`,background:(load.photos||[]).length>0?"#eff6ff":"#f8fafc",color:(load.photos||[]).length>0?"#2563eb":"#9ca3af",borderRadius:"3px",fontSize:"11px",padding:0,lineHeight:1,cursor:"pointer",position:"relative"}} title="Load photos">📷{(load.photos||[]).length>0&&<span style={{position:"absolute",top:"-4px",right:"-4px",background:"#2563eb",color:"#fff",borderRadius:"50%",width:"10px",height:"10px",fontSize:"8px",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>{(load.photos||[]).length}</span>}</button></td>
-                        <td style={T(ROW_BG,{padding:"1px 2px",textAlign:"center"})}>{load.stop!=null&&<span style={{fontSize:"11px",fontWeight:"800",color:"#92400e",background:"#fef9c3",padding:"0 4px",borderRadius:"3px",border:"1px solid #fde68a"}}>{load.stop}</span>}</td>
+                        <td style={T(ROW_BG,{padding:"1px 2px",textAlign:"center",cursor:isAdmin?"grab":"default"})}>
+  {isAdmin&&<span style={{fontSize:"13px",color:"#94a3b8",display:"block",lineHeight:"1",marginBottom:"1px"}} title="Drag to move load">⠿</span>}
+  {load.stop!=null&&<span style={{fontSize:"10px",fontWeight:"800",color:"#92400e",background:"#fef9c3",padding:"0 3px",borderRadius:"3px",border:"1px solid #fde68a"}}>{load.stop}</span>}
+</td>
                         <td style={T(ROW_BG,{minWidth:"155px",padding:"1px 2px"})}>
 {(()=>{
 const srP=parseSR(load.sr||"");
@@ -866,6 +901,7 @@ return(<div style={{display:"flex",flexDirection:"column",gap:"1px"}}>
                 </Fragment>
               );
             })}
+            {isAdmin&&(<tr onDragOver={e=>{if(!dragLoad.current)return;e.preventDefault();e.currentTarget.style.background="rgba(37,99,235,0.2)";e.currentTarget.firstChild.style.borderTop="3px dashed #3b82f6";}} onDragLeave={e=>{e.currentTarget.style.background="";e.currentTarget.firstChild.style.borderTop="none";}} onDrop={e=>{e.preventDefault();e.currentTarget.style.background="";e.currentTarget.firstChild.style.borderTop="none";if(!dragLoad.current||!isAdmin)return;const dl=dragLoad.current;dragLoad.current=null;moveLoad(dl.fromGroupId,group.id,dl.loadId,loads.length);}} style={{height:"8px",background:"transparent",transition:"background .1s"}}><td colSpan={20} style={{padding:0,borderTop:"none"}}/></tr>)}
           </tbody>
         </table>
         {!isViewer&&<div style={{padding:"8px 12px",background:"#f1f5f9",borderTop:"1px solid #e2e8f0"}}><button onClick={addGroup} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"5px",padding:"4px 12px",fontSize:"11px",fontWeight:"600",cursor:"pointer"}}>+ Add Trailer</button></div>}
