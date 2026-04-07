@@ -171,69 +171,6 @@ function calcGroup(g){
   const rpm=(tm&&tm>0)?+((gross-loc)/tm).toFixed(2):(bestAutoMi&&bestAutoMi>0)?+((gross-loc)/bestAutoMi).toFixed(2):null;
   return{...g,calcTripMi:tm,autoTripMi:bestAutoMi||null,rcvrs,rpm,gross,loc,loads:sdFinal};
 }
-
-const CITY_SUGGESTIONS=[
-"Romeoville, IL","Lockport, IL","Joliet, IL","Bolingbrook, IL","Woodridge, IL","Naperville, IL",
-"Aurora, IL","Oswego, IL","Plainfield, IL","Yorkville, IL","Montgomery, IL","North Aurora, IL",
-"Carol Stream, IL","Glendale Heights, IL","Bloomingdale, IL","Bartlett, IL","Streamwood, IL",
-"Hanover Park, IL","Addison, IL","Lombard, IL","Downers Grove, IL","Westmont, IL","Hinsdale, IL",
-"Des Plaines, IL","Elk Grove Village, IL","Schaumburg, IL","Palatine, IL","Arlington Heights, IL",
-"Buffalo Grove, IL","Wheeling, IL","Niles, IL","Morton Grove, IL","Franklin Park, IL",
-"Melrose Park, IL","Northlake, IL","West Chicago, IL","Geneva, IL","St. Charles, IL",
-"Elgin, IL","Tinley Park, IL","Orland Park, IL","Mokena, IL","Frankfort, IL","Homer Glen, IL",
-"Harvey, IL","Blue Island, IL","Calumet City, IL","Bedford Park, IL","Bridgeview, IL",
-"Justice, IL","Chicago, IL","Chicago Ridge, IL","Oak Lawn, IL","Cicero, IL","Berwyn, IL",
-"Morton, IL","Ottawa, IL","Minonk, IL","Crystal Lake, IL","DeKalb, IL","Rockford, IL",
-"Peoria, IL","Springfield, IL","Decatur, IL","Champaign, IL","Urbana, IL",
-"Milwaukee, WI","Germantown, WI","New Berlin, WI","Oak Creek, WI","Franklin, WI",
-"Racine, WI","Kenosha, WI","Pleasant Prairie, WI","Sturtevant, WI","Franksville, WI",
-"East Troy, WI","Beloit, WI","Waukesha, WI","Brookfield, WI","Menomonee Falls, WI",
-"Oconomowoc, WI","Hartland, WI","Muskego, WI","Hales Corners, WI","Greenfield, WI",
-"Kernersville, NC","Lenoir, NC","Winston-Salem, NC","Greensboro, NC","High Point, NC",
-"Durham, NC","Raleigh, NC","Cary, NC","Chapel Hill, NC","Mebane, NC","Burlington, NC",
-"Charlotte, NC","Gastonia, NC","Hickory, NC","Statesville, NC","Salisbury, NC","Concord, NC",
-"Mooresville, NC","Asheville, NC","Morganton, NC","Fayetteville, NC","Wilmington, NC",
-"Rocky Mount, NC","Henderson, NC","Faison, NC","Jonesville, NC","Dudley, NC",
-"Goldsboro, NC","Wilson, NC","Jacksonville, NC","Thomasville, NC","Lexington, NC",
-"Mechanicsville, VA","Richmond, VA","Norfolk, VA","Virginia Beach, VA","Roanoke, VA",
-"Charlottesville, VA","Lynchburg, VA","Harrisonburg, VA","Staunton, VA",
-"Rock Hill, SC","Spartanburg, SC","Greenville, SC","Beech Island, SC","Lugoff, SC",
-"Camden, SC","Aiken, SC","Charleston, SC","North Charleston, SC","Columbia, SC",
-"Florence, SC","Myrtle Beach, SC","Anderson, SC","Gaffney, SC","Union, SC","Greer, SC",
-"Atlanta, GA","College Park, GA","Braselton, GA","Athens, GA","Calhoun, GA","Rome, GA",
-"Cartersville, GA","Duluth, GA","Doraville, GA","Suwanee, GA","Lawrenceville, GA",
-"Kennesaw, GA","Marietta, GA","Smyrna, GA","Roswell, GA","Alpharetta, GA",
-"Douglasville, GA","Griffin, GA","Conyers, GA","Stockbridge, GA","McDonough, GA",
-"Fayetteville, GA","Macon, GA","Savannah, GA","Columbus, GA","Albany, GA","Valdosta, GA",
-"Fort Payne, AL","Gadsden, AL","Anniston, AL","Oxford, AL","Talladega, AL","Pell City, AL",
-"Montgomery, AL","Prattville, AL","Wetumpka, AL","Auburn, AL","Opelika, AL","Dothan, AL",
-"Enterprise, AL","Mobile, AL","Huntsville, AL","Decatur, AL","Athens, AL","Pelham, AL",
-"Alabaster, AL","Birmingham, AL","Bessemer, AL","Tuscaloosa, AL","Jasper, AL",
-"Nashville, TN","Murfreesboro, TN","Franklin, TN","Brentwood, TN","Smyrna, TN",
-"La Vergne, TN","Lebanon, TN","Cookeville, TN","Gallatin, TN","Hendersonville, TN",
-"Clarksville, TN","Chattanooga, TN","Knoxville, TN","Memphis, TN","Jackson, TN",
-"Johnson City, TN","Kingsport, TN","Bristol, TN","Bartlett, TN","Collierville, TN",
-"Jacksonville, FL","Orange Park, FL","Fernandina Beach, FL","St. Augustine, FL",
-"Gainesville, FL","Ocala, FL","Orlando, FL","Longwood, FL","Sanford, FL","Deltona, FL",
-"Daytona Beach, FL","Deland, FL","Palm Bay, FL","Melbourne, FL","Tampa, FL",
-"Brandon, FL","Clearwater, FL","St. Petersburg, FL","Largo, FL","Bradenton, FL",
-"Sarasota, FL","Fort Myers, FL","Cape Coral, FL","Naples, FL","Punta Gorda, FL",
-"Haines City, FL","Lakeland, FL","Kissimmee, FL","Leesburg, FL","Ocala, FL",
-"West Palm Beach, FL","Jupiter, FL","Port St. Lucie, FL","Fort Lauderdale, FL",
-"Pompano Beach, FL","Hollywood, FL","Miramar, FL","Miami, FL","Hialeah, FL",
-"Pensacola, FL","Pace, FL","Milton, FL","Fort Walton Beach, FL","Destin, FL","Crestview, FL",
-"Panama City, FL","Tallahassee, FL",
-"Hattiesburg, MS","Gulfport, MS","Biloxi, MS","Jackson, MS","Meridian, MS","Tupelo, MS",
-"New Orleans, LA","Baton Rouge, LA","Shreveport, LA","Lafayette, LA","Lake Charles, LA",
-"Indianapolis, IN","Fort Wayne, IN","South Bend, IN","Hammond, IN","Gary, IN","Valparaiso, IN",
-"Columbus, OH","Cincinnati, OH","Cleveland, OH","Toledo, OH","Dayton, OH","Akron, OH",
-"Detroit, MI","Grand Rapids, MI","Flint, MI","Lansing, MI","Ann Arbor, MI","Warren, MI",
-"Louisville, KY","Lexington, KY","Bowling Green, KY","Owensboro, KY",
-"Baltimore, MD","Hagerstown, MD","Frederick, MD","Rockville, MD",
-"Philadelphia, PA","Pittsburgh, PA","Allentown, PA","Harrisburg, PA","Erie, PA",
-"Dallas, TX","Houston, TX","San Antonio, TX","Fort Worth, TX","Austin, TX",
-"Atlanta, GA","Marietta, GA","Alpharetta, GA"
-];
 async function sheetsLoad(){const r=await fetch(SHEETS_URL,{redirect:"follow"});if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}
 async function sheetsSave(data){await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({data:{...data,savedAt:Date.now()}})});}
 </script>
@@ -477,7 +414,6 @@ function App(){
 
   const LS_KEY="fcbv2_localdata";
   const saveToSheets=useCallback((data)=>{
-    // Accept either a weeks array or a full data object with {weeks, customDrivers, customTrucks, customTrailers, dispatchers}
     const isArr=Array.isArray(data);
     const w=isArr?data:(data.weeks||weeks);
     const cd=isArr?customDrivers:(data.customDrivers!==undefined?data.customDrivers:customDrivers);
@@ -485,18 +421,18 @@ function App(){
     const ctr=isArr?customTrailers:(data.customTrailers!==undefined?data.customTrailers:customTrailers);
     const disp=isArr?dispatchers:(data.dispatchers!==undefined?data.dispatchers:dispatchers);
     clearTimeout(saveTimer.current);setSaveStatus("saving");
-    // Always save to localStorage immediately as backup
-    try{localStorage.setItem(LS_KEY,JSON.stringify({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,savedAt:Date.now()}));}catch(e){}
+    // Debounce BOTH localStorage and Sheets — no writes on every keystroke
     saveTimer.current=setTimeout(async()=>{
+      try{localStorage.setItem(LS_KEY,JSON.stringify({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,savedAt:Date.now()}));}catch(e){}
       try{await sheetsSave({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp});setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),3000);}
       catch(err){if(err.name==="TypeError"){setSaveStatus("error");}else{setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),3000);}}
-    },800);
+    },1000);
   },[]);
 
   const setWeeksAndSave=useCallback((updater)=>{setWeeks(prev=>{const next=typeof updater==="function"?updater(prev):updater;saveToSheets(next);return next;});},[saveToSheets]);
 
   const week=weeks[Math.min(activeWeek,weeks.length-1)];
-  const computed=useMemo(()=>(week?.groups||[]).map(calcGroup),[week]);
+  const computed=useMemo(()=>(week?.groups||[]).map(calcGroup),[week?.groups]);
   const allLoads=computed.flatMap(g=>g.loads);
   const totGross=computed.reduce((s,g)=>s+g.gross,0);
   const totLocal=computed.reduce((s,g)=>s+g.loc,0);
@@ -891,18 +827,16 @@ const srP=parseSR(load.sr||"");
 const expandS=(v)=>{const m=v.trim().match(/^\d{5}$/);if(m&&ZIPDIST[m[0]]){const c=ZIPDIST[m[0]].city+", "+ZIPDIST[m[0]].state;setLoad(group.id,load.id,"sr",c+" - "+parseSR(load.sr||"").r);}};
 const expandR=(v)=>{const m=v.trim().match(/^\d{5}$/);if(m&&ZIPDIST[m[0]]){const c=ZIPDIST[m[0]].city+", "+ZIPDIST[m[0]].state;setLoad(group.id,load.id,"sr",parseSR(load.sr||"").s+" - "+c);}};
 return(<div style={{display:"flex",flexDirection:"column",gap:"1px"}}>
-<datalist id={`cities-s-${load.id}`}>{CITY_SUGGESTIONS.map(c=>(<option key={c} value={c}/>))}</datalist>
-<datalist id={`cities-r-${load.id}`}>{CITY_SUGGESTIONS.map(c=>(<option key={c} value={c}/>))}</datalist>
-<input list={`cities-s-${load.id}`} value={srP.s} onChange={e=>{const v=e.target.value;setLoad(group.id,load.id,"sr",v+" - "+parseSR(load.sr||"").r);trackField("sr");}} style={{...IN({color:ROW_TEXT,fontSize:"10px"}),borderBottom:"1px solid #e2e8f0"}} placeholder="Shipper (city, ST)" disabled={!isAdmin}/>
-<input list={`cities-r-${load.id}`} value={srP.r} onChange={e=>{const v=e.target.value;setLoad(group.id,load.id,"sr",parseSR(load.sr||"").s+" - "+v);trackField("sr");}} style={IN({color:"#0369a1",fontSize:"10px",fontWeight:"600"})} placeholder="Receiver (city, ST)" disabled={!isAdmin}/>
+<input key={load.id+"s"+srP.s} defaultValue={srP.s} onBlur={e=>{const v=e.target.value;if(v!==srP.s){setLoad(group.id,load.id,"sr",v+" - "+parseSR(load.sr||"").r);trackField("sr");}}} style={{...IN({color:ROW_TEXT,fontSize:"10px"}),borderBottom:"1px solid #e2e8f0"}} placeholder="Shipper (city, ST)" disabled={!isAdmin}/>
+<input key={load.id+"r"+srP.r} defaultValue={srP.r} onBlur={e=>{const v=e.target.value;if(v!==srP.r){setLoad(group.id,load.id,"sr",parseSR(load.sr||"").s+" - "+v);trackField("sr");}}} style={IN({color:"#0369a1",fontSize:"10px",fontWeight:"600"})} placeholder="Receiver (city, ST)" disabled={!isAdmin}/>
 </div>);
 })()}</td>
-                        {(()=>{const show=canSeeBroker(group,load);return(<td style={T(ROW_BG)}>{show?<input value={load.broker} onChange={e=>setLoad(group.id,load.id,"broker",e.target.value)} style={IN({color:ROW_TEXT})} placeholder="Broker & Load #" disabled={!isAdmin}/>:<span style={{fontSize:"11px",color:"#475569",fontStyle:"italic",padding:"2px 4px"}}>●●● hidden</span>}</td>);})()}
-                        <td style={T(ROW_BG)}><input value={load.pickup} onChange={e=>{setLoad(group.id,load.id,"pickup",e.target.value);trackField("pickup");}} style={IN({color:ROW_TEXT})} placeholder="3/31/2026 8AM" disabled={!isAdmin}/></td>
-                        <td style={T(ROW_BG)}><input value={load.delivery} onChange={e=>{setLoad(group.id,load.id,"delivery",e.target.value);trackField("delivery");}} style={IN({color:ROW_TEXT})} placeholder="4/2/2026 9AM" disabled={!isAdmin}/></td>
-                        <td style={T(ROW_BG)}><input value={load.product} onChange={e=>{setLoad(group.id,load.id,"product",e.target.value);trackField("product");}} style={IN({color:ROW_TEXT})} placeholder="Product" disabled={!isAdmin}/></td>
-                        <td style={T(ROW_BG)}><input value={load.pallets} onChange={e=>setLoad(group.id,load.id,"pallets",e.target.value)} style={IN({color:ROW_TEXT})} placeholder="—" disabled={!isAdmin}/></td>
-                        <td style={T(ROW_BG)}><input value={load.weight} onChange={e=>setLoad(group.id,load.id,"weight",e.target.value)} style={IN({color:ROW_TEXT})} placeholder="Lbs" disabled={!isAdmin}/></td>
+                        {(()=>{const show=canSeeBroker(group,load);return(<td style={T(ROW_BG)}>{show?<input key={load.id+"b"+load.broker} defaultValue={load.broker} onBlur={e=>{if(e.target.value!==load.broker)setLoad(group.id,load.id,"broker",e.target.value);}} style={IN({color:ROW_TEXT})} placeholder="Broker & Load #" disabled={!isAdmin}/>:<span style={{fontSize:"11px",color:"#475569",fontStyle:"italic",padding:"2px 4px"}}>●●● hidden</span>}</td>);})()}
+                        <td style={T(ROW_BG)}><input key={load.id+"pu"+load.pickup} defaultValue={load.pickup} onBlur={e=>{if(e.target.value!==load.pickup){setLoad(group.id,load.id,"pickup",e.target.value);trackField("pickup");}}} style={IN({color:ROW_TEXT})} placeholder="3/31/2026 8AM" disabled={!isAdmin}/></td>
+                        <td style={T(ROW_BG)}><input key={load.id+"del"+load.delivery} defaultValue={load.delivery} onBlur={e=>{if(e.target.value!==load.delivery){setLoad(group.id,load.id,"delivery",e.target.value);trackField("delivery");}}} style={IN({color:ROW_TEXT})} placeholder="4/2/2026 9AM" disabled={!isAdmin}/></td>
+                        <td style={T(ROW_BG)}><input key={load.id+"p"+load.product} defaultValue={load.product} onBlur={e=>{if(e.target.value!==load.product){setLoad(group.id,load.id,"product",e.target.value);trackField("product");}}} style={IN({color:ROW_TEXT})} placeholder="Product" disabled={!isAdmin}/></td>
+                        <td style={T(ROW_BG)}><input key={load.id+"pal"+load.pallets} defaultValue={load.pallets} onBlur={e=>{if(e.target.value!==load.pallets)setLoad(group.id,load.id,"pallets",e.target.value);}} style={IN({color:ROW_TEXT})} placeholder="—" disabled={!isAdmin}/></td>
+                        <td style={T(ROW_BG)}><input key={load.id+"w"+load.weight} defaultValue={load.weight} onBlur={e=>{if(e.target.value!==load.weight)setLoad(group.id,load.id,"weight",e.target.value);}} style={IN({color:ROW_TEXT})} placeholder="Lbs" disabled={!isAdmin}/></td>
                         <td style={T(ROW_BG,{padding:"1px 6px",textAlign:"right"})}>{isViewer?<span style={{fontWeight:"700",color:"#374151",fontSize:"11px"}}>{load.rate?`$${parseFloat(load.rate).toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2})}`:"—"}</span>:<span style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:"1px"}}><span style={{fontSize:"10px",color:"#6b7280",fontWeight:"700",opacity:.7}}>$</span><input value={load.rate} type="number" onChange={e=>{setLoad(group.id,load.id,"rate",e.target.value);trackField("rate");}} style={IN({textAlign:"right",color:ROW_TEXT,fontWeight:"700",width:"60px"})} placeholder="0" disabled={!isAdmin}/></span>}</td>
                         <td style={T(ROW_BG)}><select value={load.driver||""} onChange={e=>{setLoad(group.id,load.id,"driver",e.target.value);trackField("driver");}} style={IN({color:load.driver?"#c2410c":"#9ca3af",cursor:"pointer"})}><option value="">— Driver —</option>{[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}</select></td>
                         <td style={T(ROW_BG,{padding:"1px 2px"})}><select value={load.truck||""} onChange={e=>{setLoad(group.id,load.id,"truck",e.target.value);trackField("truck");}} style={IN({color:load.truck?"#1e40af":"#9ca3af",cursor:"pointer",fontWeight:load.truck?"700":"400",fontSize:"11px"})}><option value="">—</option>{[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}>#{t}</option>))}</select></td>
