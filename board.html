@@ -228,7 +228,9 @@ function App(){
   const[appMode,setAppMode]=useState(null);
   const[weeks,setWeeks]=useState([]);
   const[activeWeek,setActiveWeek]=useState(0);
-  const[activeTab,setActiveTab]=useState("weeks");
+  const[activeTab,setActiveTab]=useState("dashboard");
+  const[dashCurIdx,setDashCurIdx]=useState(-1);  // -1 = auto (latest week)
+  const[dashPrevIdx,setDashPrevIdx]=useState(-2); // -2 = auto (second latest)
   const[saveStatus,setSaveStatus]=useState("idle");
   const[loading,setLoading]=useState(true);
   const[apiKey,setApiKey]=useState(()=>localStorage.getItem("fcbv2_apikey")||"");
@@ -690,6 +692,7 @@ function App(){
             {/* Navigation */}
             <div className="hdr-menu-section">Navigation</div>
             
+            {(isAdmin||isDispatcher)&&<button className={"hdr-menu-item"+(activeTab==="dashboard"?" active":"")} style={{color:activeTab==="dashboard"?"#0891b2":"#374151",background:activeTab==="dashboard"?"#ecfeff":"transparent"}} onClick={()=>{setActiveTab("dashboard");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center"}}>📊</span> Dashboard</button>}
             {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="weeks"?" active":"")} style={{color:activeTab==="weeks"?"#2563eb":"#374151",background:activeTab==="weeks"?"#eff6ff":"transparent"}} onClick={()=>{setActiveTab("weeks");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>📅</span>Weekly Boards</button>}
             {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="dispatchers"?" active":"")} style={{color:activeTab==="dispatchers"?"#7c3aed":"#374151",background:activeTab==="dispatchers"?"#faf5ff":"transparent"}} onClick={()=>{setActiveTab("dispatchers");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>🎯</span>Dispatchers</button>}
             {(isAdmin||isDispatcher)&&<button className={"hdr-menu-item"+(activeTab==="roster"?" active":"")} style={{color:activeTab==="roster"?"#065f46":"#374151",background:activeTab==="roster"?"#ecfdf5":"transparent"}} onClick={()=>{setActiveTab("roster");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>👥</span>Drivers</button>}
@@ -1434,6 +1437,302 @@ return(<div style={{display:"flex",flexDirection:"column",gap:"1px"}}>
           <span>Tracking since session start · Saves automatically</span>
           <button onClick={()=>{activityLog.current=[];fieldCounts.current={};sectionTime.current={};try{localStorage.removeItem("fcbv2_activity");}catch(e){}}} style={{background:"#fee2e2",color:"#dc2626",border:"1px solid #fca5a5",borderRadius:"5px",padding:"3px 10px",fontSize:"10px",fontWeight:"700",cursor:"pointer"}}>Reset Tracking</button>
         </div>
+      </div>
+    )}
+
+    {/* DASHBOARD TAB */}
+    {activeTab==="dashboard"&&(
+      <div style={{padding:"0",minHeight:"calc(100vh - 120px)",background:"#f0f4f8"}}>
+        {(()=>{
+          const resolvedCurIdx=dashCurIdx<0?weeks.length+dashCurIdx:dashCurIdx;
+          const resolvedPrevIdx=dashPrevIdx<0?weeks.length+dashPrevIdx:dashPrevIdx;
+          const safeCurIdx=Math.max(0,Math.min(resolvedCurIdx,weeks.length-1));
+          const safePrevIdx=Math.max(0,Math.min(resolvedPrevIdx,weeks.length-1));
+          const curWk=weeks[safeCurIdx]||{groups:[],localDeliveries:[],accessorials:[]};
+          const prevWk=weeks[safePrevIdx]||{groups:[],localDeliveries:[],accessorials:[]};
+          const LOCAL_DRV=new Set(["Linas Greiciunas","Theron Mack","John Johnson","Douglas Russo","Emilis Ibianskas","Egidijus Matulis","Oleh Lashkevych"]);
+          const calcWk=(w)=>{
+            const grps=w.groups||[];
+            const loads=grps.flatMap(g=>g.loads||[]);
+            const gross=loads.reduce((s,l)=>s+(parseFloat(l.rate)||0),0);
+            // Compute local charges from raw load data (manualLocalCharge or auto from pickupMiUsed)
+            const loc=loads.reduce((s,l)=>{
+              if(l.manualLocalCharge!==""&&l.manualLocalCharge!=null)return s+(parseFloat(l.manualLocalCharge)||0);
+              const{s:shipper}=parseSR(l.sr||"");
+              const am=cityMiles(shipper);
+              const um=(l.manualPickupMi!==""&&l.manualPickupMi!=null)?parseFloat(l.manualPickupMi):am;
+              return s+(um!=null?localCharge(um):0);
+            },0);
+            const acc=(w.accessorials||[]).reduce((s,a)=>s+(parseFloat(a.amount)||0),0);
+            const localDel=(w.localDeliveries||[]).length;
+            const trailers=grps.length;
+            const allMi=grps.reduce((s,g)=>s+(g.calcTripMi?parseFloat(g.calcTripMi):(g.autoTripMi||0)),0);
+            const netGross=gross-loc+acc;
+            const rpm=allMi>0?+((gross-loc)/allMi).toFixed(2):0;
+            const drivers={};
+            loads.forEach(l=>{const d=l.driver||(grps.find(g=>g.loads.some(ld=>ld.id===l.id))||{}).groupDriver;if(d&&!LOCAL_DRV.has(d)){drivers[d]=(drivers[d]||0)+(parseFloat(l.rate)||0);}});
+            const states={};
+            loads.forEach(l=>{
+              const sr=parseSR(l.sr||"");
+              const rcv=sr.r||"";
+              // Match "City, ST" — grab the state abbreviation after the comma
+              const stMatch=rcv.match(/,\s*([A-Z]{2})\b/);
+              const st=stMatch?stMatch[1]:null;
+              if(st)states[st]=(states[st]||0)+1;
+            });
+            return{gross,loc,acc,localDel,trailers,loads:loads.length,allMi:Math.round(allMi),netGross,rpm,drivers,states};
+          };
+          const cur=calcWk(curWk);
+          const prev=calcWk(prevWk);
+          const curLabel=curWk.label||"Current Week";
+          const prevLabel=prevWk.label||"Previous Week";
+          const delta=(a,b)=>b>0?Math.round((a-b)/b*100):a>0?100:0;
+          const Arrow=({a,b,rev})=>{const d=delta(a,b);const good=rev?d<0:d>0;return d===0?null:(<span style={{fontSize:"10px",fontWeight:"700",color:good?"#16a34a":"#dc2626",marginLeft:"3px"}}>{d>0?"▲":"▼"}{Math.abs(d)}%</span>);};
+          const statCards=[
+            {label:"Total Loads",cur:cur.loads,prev:prev.loads,icon:"📦",color:"#2563eb",bg:"#eff6ff",fmt:v=>v},
+            {label:"OTR Trailers",cur:cur.trailers,prev:prev.trailers,icon:"🚛",color:"#7c3aed",bg:"#faf5ff",fmt:v=>v},
+            {label:"Local Deliveries",cur:cur.localDel,prev:prev.localDel,icon:"🏙",color:"#0891b2",bg:"#ecfeff",fmt:v=>v},
+            {label:"Gross Revenue",cur:cur.gross,prev:prev.gross,icon:"💰",color:"#059669",bg:"#f0fdf4",fmt:v=>"$"+v.toLocaleString()},
+            {label:"Local Expenses",cur:cur.loc,prev:prev.loc,icon:"🏠",color:"#d97706",bg:"#fffbeb",fmt:v=>"$"+v.toLocaleString(),rev:true},
+            {label:"Accessorials",cur:cur.acc,prev:prev.acc,icon:"➕",color:"#0891b2",bg:"#ecfeff",fmt:v=>"$"+v.toLocaleString()},
+            {label:"Net Revenue",cur:cur.netGross,prev:prev.netGross,icon:"🏆",color:"#166534",bg:"#dcfce7",fmt:v=>"$"+v.toLocaleString()},
+            {label:"Avg $/mi",cur:cur.rpm,prev:prev.rpm,icon:"📍",color:"#7c3aed",bg:"#faf5ff",fmt:v=>v?"$"+v+"/mi":"—"},
+            {label:"Miles Driven",cur:cur.allMi,prev:prev.allMi,icon:"🛣",color:"#374151",bg:"#f8fafc",fmt:v=>v>0?v.toLocaleString()+" mi":"—"},
+          ];
+          const allStates=Object.keys({...cur.states,...prev.states});
+          const topDrivers=Object.entries(cur.drivers).sort((a,b)=>b[1]-a[1]).slice(0,8);
+          const maxDriverGross=topDrivers.length>0?topDrivers[0][1]:1;
+          const maxStat=Math.max(...statCards.map(s=>Math.max(s.cur,s.prev)),1);
+          return(
+            <div style={{maxWidth:"1400px",margin:"0 auto",padding:"16px"}}>
+              {/* TODAY SECTION */}
+              {(()=>{
+                const todayMs=new Date().setHours(0,0,0,0);
+                const tomorrowMs=todayMs+86400000;
+                const allLoadsAllWeeks=weeks.flatMap(w=>(w.groups||[]).flatMap(g=>(g.loads||[]).map(l=>({...l,weekLabel:w.label,trailer:g.groupTrailer||"",groupId:g.id,weekId:w.id}))));
+                const pickupsToday=allLoadsAllWeeks.filter(l=>{const d=parsePickupDate(l.pickup);return d&&d.getTime()===todayMs;}).sort((a,b)=>parseTS(a.pickup)-parseTS(b.pickup));
+                const deliveriesToday=allLoadsAllWeeks.filter(l=>{const d=parsePickupDate(l.delivery);return d&&d.getTime()===todayMs;}).sort((a,b)=>parseTS(a.delivery)-parseTS(b.delivery));
+                const pickupsTomorrow=allLoadsAllWeeks.filter(l=>{const d=parsePickupDate(l.pickup);return d&&d.getTime()===tomorrowMs;}).sort((a,b)=>parseTS(a.pickup)-parseTS(b.pickup));
+                const hasSomething=pickupsToday.length>0||deliveriesToday.length>0||pickupsTomorrow.length>0;
+                const statusColors={"Picked Up":"#ca8a04","Dispatched":"#2563eb","In Transit":"#c2410c","Dock":"#7c3aed","Loaded":"#16a34a","Delivered":"#16a34a"};
+                const LoadCard=({load,type})=>(
+                  <div onClick={()=>{setActiveWeek(weeks.findIndex(w=>w.id===load.weekId));setActiveTab("weeks");}} style={{background:"#fff",border:"2px solid "+(type==="pickup"?"#fde68a":type==="delivery"?"#86efac":"#bfdbfe"),borderRadius:"10px",padding:"10px 14px",cursor:"pointer",transition:"box-shadow .1s",display:"flex",gap:"12px",alignItems:"center"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.1)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+                    <div style={{fontSize:"22px",flexShrink:0}}>{type==="pickup"?"🛫":type==="delivery"?"🛬":"🕐"}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"12px",fontWeight:"700",color:"#0f1f3d",marginBottom:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{load.sr||"—"}</div>
+                      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
+                        <span style={{fontSize:"10px",color:"#64748b"}}>{type==="pickup"?load.pickup:type==="delivery"?load.delivery:load.pickup}</span>
+                        {load.driver&&<span style={{fontSize:"10px",fontWeight:"600",color:"#059669"}}>👤 {load.driver}</span>}
+                        {load.trailer&&<span style={{fontSize:"10px",fontWeight:"700",color:"#7c3aed"}}>#{load.trailer}</span>}
+                        {load.broker&&isAdmin&&<span style={{fontSize:"10px",color:"#2563eb"}}>{load.broker.split("&")[0]?.trim()}</span>}
+                        {load.status&&<span style={{fontSize:"9px",fontWeight:"700",padding:"1px 6px",borderRadius:"8px",background:(statusColors[load.status]||"#94a3b8")+"22",color:statusColors[load.status]||"#94a3b8",border:"1px solid "+(statusColors[load.status]||"#94a3b8")+"44"}}>{load.status}</span>}
+                      </div>
+                    </div>
+                    {load.rate&&<div style={{fontSize:"13px",fontWeight:"800",color:"#059669",flexShrink:0}}>${parseFloat(load.rate).toLocaleString()}</div>}
+                  </div>
+                );
+                if(!hasSomething)return(
+                  <div style={{background:"#fff",borderRadius:"12px",padding:"20px",marginBottom:"20px",boxShadow:"0 1px 4px rgba(0,0,0,0.07)",border:"1px solid #e2e8f0",textAlign:"center",color:"#94a3b8",fontSize:"13px"}}>
+                    ✅ Nothing scheduled for today
+                  </div>
+                );
+                return(
+                  <div style={{marginBottom:"20px"}}>
+                    <div style={{fontSize:"13px",fontWeight:"700",color:"#64748b",marginBottom:"10px",display:"flex",alignItems:"center",gap:"6px"}}>
+                      <span style={{background:"#fef3c7",color:"#92400e",padding:"2px 10px",borderRadius:"20px",fontWeight:"800",fontSize:"12px"}}>TODAY — {new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</span>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(340px,1fr))",gap:"16px"}}>
+                      {pickupsToday.length>0&&(
+                        <div style={{background:"#fffbeb",borderRadius:"12px",padding:"14px",border:"1px solid #fde68a"}}>
+                          <div style={{fontWeight:"700",fontSize:"13px",color:"#92400e",marginBottom:"10px",display:"flex",alignItems:"center",gap:"6px"}}>
+                            🛫 Pickups Today <span style={{background:"#f59e0b",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",fontSize:"11px",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:"800"}}>{pickupsToday.length}</span>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                            {pickupsToday.map(l=>(<LoadCard key={l.id} load={l} type="pickup"/>))}
+                          </div>
+                        </div>
+                      )}
+                      {deliveriesToday.length>0&&(
+                        <div style={{background:"#f0fdf4",borderRadius:"12px",padding:"14px",border:"1px solid #86efac"}}>
+                          <div style={{fontWeight:"700",fontSize:"13px",color:"#166534",marginBottom:"10px",display:"flex",alignItems:"center",gap:"6px"}}>
+                            🛬 Deliveries Today <span style={{background:"#16a34a",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",fontSize:"11px",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:"800"}}>{deliveriesToday.length}</span>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                            {deliveriesToday.map(l=>(<LoadCard key={l.id} load={l} type="delivery"/>))}
+                          </div>
+                        </div>
+                      )}
+                      {pickupsTomorrow.length>0&&(
+                        <div style={{background:"#eff6ff",borderRadius:"12px",padding:"14px",border:"1px solid #bfdbfe"}}>
+                          <div style={{fontWeight:"700",fontSize:"13px",color:"#1e40af",marginBottom:"10px",display:"flex",alignItems:"center",gap:"6px"}}>
+                            🕐 Pickups Tomorrow <span style={{background:"#2563eb",color:"#fff",borderRadius:"50%",width:"20px",height:"20px",fontSize:"11px",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:"800"}}>{pickupsTomorrow.length}</span>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                            {pickupsTomorrow.map(l=>(<LoadCard key={l.id} load={l} type="tomorrow"/>))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Header */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px",flexWrap:"wrap",gap:"8px"}}>
+                <div>
+                  <div style={{fontSize:"22px",fontWeight:"800",color:"#0f1f3d"}}>📊 Weekly Dashboard</div>
+                  <div style={{fontSize:"12px",color:"#64748b",marginTop:"2px"}}>{curLabel} vs {prevLabel}</div>
+                </div>
+                <button onClick={()=>setActiveTab("weeks")} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"8px",padding:"8px 20px",fontSize:"13px",fontWeight:"700",cursor:"pointer"}}>Open Board →</button>
+              </div>
+
+              {/* Week Comparison Header */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"20px"}}>{[
+                {label:"Week A",idx:safeCurIdx,setIdx:setDashCurIdx,accent:"#2563eb",accentLight:"#93c5fd",bg:"#1e3a5f",border:"2px solid #2563eb",data:cur,textColor:"#fff",subColor:"#93c5fd",numColors:["#34d399","#60a5fa","#a78bfa","#fbbf24"]},
+                {label:"Week B",idx:safePrevIdx,setIdx:setDashPrevIdx,accent:"#475569",accentLight:"#94a3b8",bg:"#1a2e50",border:"1px solid #334155",data:prev,textColor:"#e2e8f0",subColor:"#94a3b8",numColors:["#6b7280","#6b7280","#6b7280","#6b7280"]}
+              ].map((card)=>(
+                <div key={card.label} style={{background:card.bg,borderRadius:"12px",padding:"16px 20px",border:card.border}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px",gap:"8px",flexWrap:"wrap"}}>
+                    <span style={{fontSize:"13px",fontWeight:"800",color:card.subColor,letterSpacing:".06em",textTransform:"uppercase"}}>{card.label}</span>
+                    <select value={card.idx} onChange={e=>card.setIdx(parseInt(e.target.value))} style={{background:"rgba(255,255,255,0.1)",color:card.textColor,border:"1px solid rgba(255,255,255,0.2)",borderRadius:"6px",padding:"4px 8px",fontSize:"12px",fontWeight:"600",cursor:"pointer",outline:"none",maxWidth:"180px"}}>
+                      {weeks.map((w,i)=>(<option key={w.id} value={i} style={{background:"#1a2e50",color:"#fff"}}>{w.label||("Week "+(i+1))}</option>))}
+                    </select>
+                  </div>
+                  <div style={{fontSize:"15px",fontWeight:"800",color:card.textColor,marginBottom:"12px"}}>{(weeks[card.idx]||{}).label||"—"}</div>
+                  <div style={{display:"flex",gap:"16px",flexWrap:"wrap"}}>
+                    <div><div style={{fontSize:"22px",fontWeight:"900",color:card.numColors[0]}}>${card.data.netGross.toLocaleString()}</div><div style={{fontSize:"11px",color:card.subColor,fontWeight:"600"}}>Net Revenue</div></div>
+                    <div><div style={{fontSize:"22px",fontWeight:"900",color:card.numColors[1]}}>{card.data.loads}</div><div style={{fontSize:"11px",color:card.subColor,fontWeight:"600"}}>Loads</div></div>
+                    <div><div style={{fontSize:"22px",fontWeight:"900",color:card.numColors[2]}}>{card.data.trailers}</div><div style={{fontSize:"11px",color:card.subColor,fontWeight:"600"}}>Trailers</div></div>
+                    <div><div style={{fontSize:"22px",fontWeight:"900",color:card.numColors[3]}}>{card.data.rpm?("$"+card.data.rpm+"/mi"):"—"}</div><div style={{fontSize:"11px",color:card.subColor,fontWeight:"600"}}>Rate/Mile</div></div>
+                  </div>
+                </div>
+              ))}</div>
+
+              {/* Stat Cards */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"12px",marginBottom:"24px"}}>
+                {statCards.map((sc)=>(
+                  <div key={sc.label} style={{background:"#fff",borderRadius:"12px",padding:"14px",boxShadow:"0 1px 4px rgba(0,0,0,0.07)",border:"1px solid #e2e8f0"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"8px"}}>
+                      <span style={{fontSize:"18px"}}>{sc.icon}</span>
+                      <span style={{fontSize:"10px",fontWeight:"700",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em"}}>{sc.label}</span>
+                    </div>
+                    <div style={{fontSize:"22px",fontWeight:"800",color:sc.color}}>{sc.fmt(sc.cur)}<Arrow a={sc.cur} b={sc.prev} rev={sc.rev}/></div>
+                    <div style={{fontSize:"10px",color:"#94a3b8",marginTop:"4px"}}>prev: {sc.fmt(sc.prev)}</div>
+                    {/* Mini comparison bar */}
+                    {sc.cur>0&&sc.prev>0&&(<div style={{display:"flex",gap:"2px",marginTop:"8px",alignItems:"flex-end",height:"24px"}}>
+                      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
+                        <div style={{width:"100%",background:sc.color,borderRadius:"2px",height:Math.round(sc.prev/Math.max(sc.cur,sc.prev)*20)+"px",opacity:.4}}/>
+                        <span style={{fontSize:"8px",color:"#94a3b8"}}>prev</span>
+                      </div>
+                      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
+                        <div style={{width:"100%",background:sc.color,borderRadius:"2px",height:Math.round(sc.cur/Math.max(sc.cur,sc.prev)*20)+"px"}}/>
+                        <span style={{fontSize:"8px",color:sc.color,fontWeight:"700"}}>now</span>
+                      </div>
+                    </div>)}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px",marginBottom:"16px"}}>
+                {/* Top Drivers */}
+                <div style={{background:"#fff",borderRadius:"12px",padding:"16px",boxShadow:"0 1px 4px rgba(0,0,0,0.07)",border:"1px solid #e2e8f0"}}>
+                  <div style={{fontWeight:"700",fontSize:"14px",color:"#0f1f3d",marginBottom:"14px"}}>🧑 Top Drivers — {curLabel}</div>
+                  {topDrivers.length===0?(<div style={{color:"#94a3b8",fontSize:"12px",textAlign:"center",padding:"20px"}}>No driver data yet</div>):(
+                    <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                      {topDrivers.map((dr,i)=>(
+                        <div key={dr[0]} style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                          <span style={{fontSize:"13px",fontWeight:"800",color:i===0?"#f59e0b":i===1?"#94a3b8":i===2?"#d97706":"#cbd5e1",minWidth:"20px"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1)}</span>
+                          <span style={{fontSize:"12px",fontWeight:"600",color:"#374151",minWidth:"100px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dr[0]}</span>
+                          <div style={{flex:1,height:"8px",background:"#f1f5f9",borderRadius:"4px",overflow:"hidden"}}>
+                            <div style={{height:"100%",width:Math.round(dr[1]/maxDriverGross*100)+"%",background:i===0?"#f59e0b":i===1?"#94a3b8":"#2563eb",borderRadius:"4px"}}/>
+                          </div>
+                          <span style={{fontSize:"11px",fontWeight:"700",color:"#059669",minWidth:"60px",textAlign:"right"}}>${dr[1].toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* States Map */}
+                <div style={{background:"#fff",borderRadius:"12px",padding:"16px",boxShadow:"0 1px 4px rgba(0,0,0,0.07)",border:"1px solid #e2e8f0"}}>
+                  <div style={{fontWeight:"700",fontSize:"14px",color:"#0f1f3d",marginBottom:"14px"}}>🗺 Deliveries by State</div>
+                  {allStates.length===0?(<div style={{color:"#94a3b8",fontSize:"12px",textAlign:"center",padding:"20px"}}>No delivery data yet — enter receiver cities like "Kernersville, NC"</div>):(
+                    <div style={{display:"flex",flexDirection:"column",gap:"8px",maxHeight:"280px",overflowY:"auto"}}>
+                      {allStates.sort((a,b)=>(cur.states[b]||0)-(cur.states[a]||0)).map((st)=>{
+                        const c=cur.states[st]||0;const p=prev.states[st]||0;const mx=Math.max(...allStates.map(s=>Math.max(cur.states[s]||0,prev.states[s]||0)),1);
+                        const stNames={"AL":"Alabama","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","FL":"Florida","GA":"Georgia","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"};
+                        return(
+                          <div key={st}>
+                            <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"3px"}}>
+                              <span style={{fontSize:"13px",fontWeight:"800",color:"#1e40af",minWidth:"30px"}}>{st}</span>
+                              <span style={{fontSize:"11px",color:"#64748b",flex:1}}>{stNames[st]||""}</span>
+                              <span style={{fontSize:"13px",fontWeight:"800",color:"#2563eb"}}>{c}</span>
+                              {p>0&&<span style={{fontSize:"11px",color:"#94a3b8"}}>/ {p}</span>}
+                            </div>
+                            <div style={{display:"flex",gap:"3px",alignItems:"center",height:"14px"}}>
+                              {p>0&&<div style={{height:"8px",background:"#bfdbfe",borderRadius:"2px",width:Math.round(p/mx*100)+"%",minWidth:"4px"}}/>}
+                              {c>0&&<div style={{height:"8px",background:"#2563eb",borderRadius:"2px",width:Math.round(c/mx*100)+"%",minWidth:"4px"}}/>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div style={{display:"flex",gap:"16px",marginTop:"6px",paddingTop:"8px",borderTop:"1px solid #e2e8f0"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"12px",height:"8px",background:"#2563eb",borderRadius:"2px"}}/><span style={{fontSize:"11px",color:"#64748b",fontWeight:"600"}}>Week A</span></div>
+                        <div style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"12px",height:"8px",background:"#bfdbfe",borderRadius:"2px"}}/><span style={{fontSize:"11px",color:"#64748b",fontWeight:"600"}}>Week B</span></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Weekly comparison bar chart */}
+              <div style={{background:"#fff",borderRadius:"12px",padding:"20px",boxShadow:"0 1px 4px rgba(0,0,0,0.07)",border:"1px solid #e2e8f0",marginBottom:"16px"}}>
+                <div style={{fontWeight:"800",fontSize:"18px",color:"#0f1f3d",marginBottom:"20px"}}>📈 All Weeks — Revenue Overview</div>
+                <div style={{display:"flex",alignItems:"flex-end",gap:"8px",minHeight:"200px",overflowX:"auto",paddingBottom:"0",paddingTop:"20px"}}>
+                  {(()=>{
+                    const sliced=[...weeks].slice(-12);
+                    const allGross=sliced.map(w=>(w.groups||[]).flatMap(g=>g.loads||[]).reduce((s,l)=>s+(parseFloat(l.rate)||0),0));
+                    const maxG=Math.max(...allGross,1);
+                    const BAR_H=160;
+                    return sliced.map((w)=>{
+                      const wg=w.groups||[];
+                      const wl=wg.flatMap(g=>g.loads||[]);
+                      const wGross=wl.reduce((s,l)=>s+(parseFloat(l.rate)||0),0);
+                      const wLoc=wl.reduce((s,l)=>{
+                        if(l.manualLocalCharge!==""&&l.manualLocalCharge!=null)return s+(parseFloat(l.manualLocalCharge)||0);
+                        const sh=parseSR(l.sr||"").s;const am=cityMiles(sh);
+                        const um=(l.manualPickupMi!==""&&l.manualPickupMi!=null)?parseFloat(l.manualPickupMi):am;
+                        return s+(um!=null?localCharge(um):0);
+                      },0);
+                      const wNet=wGross-wLoc;
+                      const barPx=wGross>0?Math.max(Math.round(wGross/maxG*BAR_H),6):0;
+                      const locPx=wGross>0?Math.round(wLoc/wGross*barPx):0;
+                      const isLast=w.id===weeks[weeks.length-1]?.id;
+                      const wLabel=(w.label||"").replace(/\d{4}/g,"").replace(/\s+/g," ").trim();
+                      const parts=wLabel.split("-");
+                      const shortLabel=parts[0]?parts[0].trim().slice(0,6):"";
+                      return(
+                        <div key={w.id} style={{display:"flex",flexDirection:"column",alignItems:"center",minWidth:"56px",flex:1}}>
+                          <div style={{fontSize:"11px",fontWeight:"800",color:isLast?"#2563eb":"#374151",whiteSpace:"nowrap",marginBottom:"4px",minHeight:"16px",textAlign:"center"}}>{wGross>0?"$"+Math.round(wNet/1000)+"k":""}</div>
+                          <div style={{width:"80%",height:barPx+"px",background:isLast?"#2563eb":"#93c5fd",borderRadius:"5px 5px 0 0",position:"relative",overflow:"hidden",minHeight:wGross>0?"6px":"0"}}>
+                            {locPx>0&&<div style={{position:"absolute",bottom:0,width:"100%",height:locPx+"px",background:isLast?"#1d4ed8":"#60a5fa"}}/>}
+                          </div>
+                          <div style={{fontSize:"10px",color:isLast?"#2563eb":"#64748b",fontWeight:isLast?"800":"500",textAlign:"center",marginTop:"4px",lineHeight:"1.2",maxWidth:"56px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shortLabel}</div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                <div style={{display:"flex",gap:"20px",marginTop:"14px",paddingTop:"12px",borderTop:"1px solid #f1f5f9",flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"12px",height:"12px",background:"#93c5fd",borderRadius:"3px"}}/><span style={{fontSize:"11px",color:"#475569",fontWeight:"600"}}>Gross (other weeks)</span></div>
+                  <div style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"12px",height:"12px",background:"#2563eb",borderRadius:"3px"}}/><span style={{fontSize:"11px",color:"#2563eb",fontWeight:"700"}}>Gross (current week)</span></div>
+                  <div style={{display:"flex",alignItems:"center",gap:"5px"}}><div style={{width:"12px",height:"12px",background:"#1d4ed8",borderRadius:"3px"}}/><span style={{fontSize:"11px",color:"#475569",fontWeight:"600"}}>Local charges deducted</span></div>
+                </div>
+              </div>
+
+            </div>
+          );
+        })()}
       </div>
     )}
 
