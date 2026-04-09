@@ -172,7 +172,20 @@ function calcGroup(g){
   return{...g,calcTripMi:tm,autoTripMi:bestAutoMi||null,rcvrs,rpm,gross,loc,loads:sdFinal};
 }
 async function sheetsLoad(){const r=await fetch(SHEETS_URL,{redirect:"follow"});if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}
-async function sheetsSave(data){await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({data:{...data,savedAt:Date.now()}})});}
+async function sheetsSave(data){
+  // Strip photos before sending — keep them in localStorage only
+  const stripped={...data,savedAt:Date.now()};
+  if(stripped.weeks){
+    stripped.weeks=stripped.weeks.map(w=>({
+      ...w,
+      groups:(w.groups||[]).map(g=>({
+        ...g,
+        loads:(g.loads||[]).map(l=>({...l,photos:[]}))
+      }))
+    }));
+  }
+  await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({data:stripped})});
+}
 </script>
 
 <script type="text/babel">const {useState,useEffect,useRef,useMemo,Fragment,useCallback}=React;
@@ -362,7 +375,7 @@ function App(){
             if(local.dispatchers)setDispatchers(local.dispatchers);
           } else {setWeeks([mkWeek(new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"}))]);}
         }catch(e){setWeeks([mkWeek(new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"}))]);}
-        setLoading(false);setSaveStatus("error");
+        setLoading(false);setSaveStatus("idle");
       });
   },[appMode]);
 
@@ -436,7 +449,12 @@ function App(){
     clearTimeout(saveTimer.current);setSaveStatus("saving");
     saveTimer.current=setTimeout(async()=>{
       // Always save localStorage first — data is safe regardless of Sheets result
-      try{localStorage.setItem(LS_KEY,JSON.stringify({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta,savedAt:Date.now()}));localStorage.setItem("fcbv2_truckassign",JSON.stringify(ta));}catch(e){}
+      try{
+        // Strip photos for localStorage too (keep photos in memory only during session)
+        const wNoPhotos=w.map(wk=>({...wk,groups:(wk.groups||[]).map(g=>({...g,loads:(g.loads||[]).map(l=>({...l,photos:l.photos&&l.photos.length?["__has_"+l.photos.length]:[]}))}))  }));
+        localStorage.setItem(LS_KEY,JSON.stringify({weeks:wNoPhotos,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta,savedAt:Date.now()}));
+        localStorage.setItem("fcbv2_truckassign",JSON.stringify(ta));
+      }catch(e){}
       // Sheets save — no-cors fetch always throws TypeError on redirect but data still saves
       try{
         await sheetsSave({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta});
