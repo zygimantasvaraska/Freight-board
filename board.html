@@ -241,8 +241,9 @@ function App(){
   const[appMode,setAppMode]=useState(null);
   const[weeks,setWeeks]=useState([]);
   const[activeWeek,setActiveWeek]=useState(0);
-  const[activeTab,setActiveTab]=useState("dashboard");
-  const[boardFilter,setBoardFilter]=useState("all"); // all | today | tomorrow | active | pending | done
+  const[activeTab,setActiveTab]=useState(()=>localStorage.getItem("fcbv2_lastTab")||"dashboard");
+  const[boardFilter,setBoardFilter]=useState("all");
+  useEffect(()=>{if(activeTab&&appMode)localStorage.setItem("fcbv2_lastTab",activeTab);},[activeTab,appMode]); // all | today | tomorrow | active | pending | done
   const[dashCurIdx,setDashCurIdx]=useState(-1);  // -1 = auto (latest week)
   const[dashPrevIdx,setDashPrevIdx]=useState(-2); // -2 = auto (second latest)
   const[saveStatus,setSaveStatus]=useState("idle");
@@ -544,6 +545,9 @@ function App(){
 
   if(!appMode)return <LoginScreen onLogin={(mode,disp)=>{
     setAppMode(mode);setCurrentDispatcher(disp);
+    // Dispatchers go straight to the board; admins go to dashboard
+    if(mode==="dispatcher"){setActiveTab("weeks");localStorage.setItem("fcbv2_lastTab","weeks");}
+    else if(mode==="admin"){const lastTab=localStorage.getItem("fcbv2_lastTab")||"dashboard";setActiveTab(lastTab);}
     const entry={name:mode==="dispatcher"&&disp?disp.name:mode==="admin"?"Admin":"Viewer",role:mode,ts:new Date().toLocaleString("en-US",{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})};
     setLoginLog(prev=>{const next=[entry,...prev].slice(0,200);localStorage.setItem("fcbv2_loginlog",JSON.stringify(next));return next;});
   }}/>;
