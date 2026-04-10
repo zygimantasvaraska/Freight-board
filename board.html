@@ -350,7 +350,7 @@ function App(){
           if(data.customTrucks)setCustomTrucks(data.customTrucks);
           if(data.customTrailers)setCustomTrailers(data.customTrailers);
           if(data.dispatchers&&data.dispatchers.length>0){setDispatchers(data.dispatchers);localStorage.setItem(DISPATCHERS_KEY,JSON.stringify(data.dispatchers));}
-          if(srcData.truckAssignments&&Object.keys(srcData.truckAssignments).length>0){setTruckAssignments(srcData.truckAssignments);}
+          if(data.truckAssignments&&Object.keys(data.truckAssignments).length>0){setTruckAssignments(data.truckAssignments);}
         } else {
           try{
             const local=JSON.parse(localStorage.getItem("fcbv2_localdata")||"{}");
