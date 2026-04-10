@@ -190,10 +190,10 @@ async function sheetsSave(data){
 
 <script type="text/babel">const {useState,useEffect,useRef,useMemo,Fragment,useCallback}=React;
 
-function LoginScreen({onLogin}){
+function LoginScreen({onLogin,dispatchers:dispProp}){
   const adminPin=localStorage.getItem(ADMIN_PIN_KEY)||DEFAULT_ADMIN;
   const viewerPin=localStorage.getItem(VIEWER_PIN_KEY)||DEFAULT_VIEWER;
-  const dispatchers=JSON.parse(localStorage.getItem(DISPATCHERS_KEY)||"[]");
+  const dispatchers=dispProp&&dispProp.length>0?dispProp:JSON.parse(localStorage.getItem(DISPATCHERS_KEY)||"[]");
   const[mode,setMode]=useState(null);
   const[pin,setPin]=useState("");
   const[err,setErr]=useState("");
@@ -204,7 +204,9 @@ function LoginScreen({onLogin}){
     if(pin===viewerPin){onLogin("viewer",null);return;}
     const disp=dispatchers.find(d=>d.pin&&d.pin===pin);
     if(disp){onLogin("dispatcher",disp);return;}
-    setErr("Incorrect PIN");setPin("");
+    // If dispatchers still empty (loading), give a helpful message
+    if(dispatchers.length===0){setErr("Still loading — please wait a moment and try again");setPin("");}
+    else{setErr("Incorrect PIN");setPin("");}
   };
   return(
     <div className="login-wrap">
@@ -543,7 +545,7 @@ function App(){
   const CELL=(bg,ex={})=>({padding:"4px 6px",border:"1px solid #e2e8f0",background:bg||"#fff",verticalAlign:"middle",fontSize:"11px",...ex});
   const INCEL=(ex={})=>({width:"100%",border:"none",background:"transparent",fontSize:"11px",padding:"1px 2px",color:"#111",fontFamily:"inherit",outline:"none",...ex});
 
-  if(!appMode)return <LoginScreen onLogin={(mode,disp)=>{
+  if(!appMode)return <LoginScreen dispatchers={dispatchers} onLogin={(mode,disp)=>{
     setAppMode(mode);setCurrentDispatcher(disp);
     // Dispatchers go straight to the board; admins go to dashboard
     if(mode==="dispatcher"){setActiveTab("weeks");localStorage.setItem("fcbv2_lastTab","weeks");}
