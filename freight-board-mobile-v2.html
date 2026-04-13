@@ -13,11 +13,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── HEADER ── */
 .hdr{background:#0f1f3d;padding:14px 16px 0;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,0.07);}
-.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
 .hdr-title{color:#fff;font-size:17px;font-weight:800;letter-spacing:-.3px;}
 .hdr-sub{color:rgba(255,255,255,0.35);font-size:10px;margin-top:1px;}
+.hdr-btns{display:flex;gap:7px;flex-shrink:0;}
+.hdr-icon-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.hdr-icon-btn:active{opacity:.7;}
 .refresh-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
 .refresh-btn:active{opacity:.7;}
+
+/* ── SEARCH BAR ── */
+.search-bar{padding:0 14px 10px;display:none;}
+.search-bar.open{display:block;}
+.search-input-wrap{position:relative;display:flex;align-items:center;}
+.search-input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:10px 40px 10px 16px;color:#fff;font-size:14px;font-family:inherit;outline:none;}
+.search-input::placeholder{color:rgba(255,255,255,0.3);}
+.search-input:focus{border-color:#3b82f6;background:rgba(59,130,246,0.1);}
+.search-clear{position:absolute;right:12px;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;background:none;border:none;}
+.search-results{margin-top:8px;max-height:300px;overflow-y:auto;}
+.search-result-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:11px 14px;margin-bottom:6px;cursor:pointer;}
+.search-result-item:active{background:rgba(59,130,246,0.15);}
+.search-result-route{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;}
+.search-result-meta{font-size:11px;color:rgba(255,255,255,0.4);}
+.search-result-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;margin-right:4px;}
+.search-empty{text-align:center;padding:20px;color:rgba(255,255,255,0.3);font-size:13px;}
 
 /* ── BOTTOM NAV ── */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#0f1f3d;border-top:1px solid rgba(255,255,255,0.08);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);}
@@ -44,6 +63,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .today-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .today-section-title{font-size:10px;font-weight:800;margin-bottom:5px;}
 .today-load-card{background:rgba(0,0,0,0.3);border-radius:10px;padding:9px 11px;margin-bottom:5px;border-left:3px solid #fbbf24;cursor:pointer;}
+.today-load-card:active{opacity:.8;}
 .today-load-card.delivery{border-left-color:#34d399;}
 .today-load-card.tomorrow{border-left-color:#3b82f6;}
 .today-load-route{font-size:12px;font-weight:700;color:#fff;line-height:1.3;}
@@ -60,7 +80,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .driver-rank{font-size:16px;width:24px;flex-shrink:0;}
 .driver-name{flex:1;font-size:13px;font-weight:700;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .driver-bar-wrap{width:80px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;flex-shrink:0;}
-.driver-bar{height:100%;border-radius:3px;background:#3b82f6;}
+.driver-bar{height:100%;border-radius:3px;}
 .driver-gross{font-size:12px;font-weight:800;color:#34d399;flex-shrink:0;min-width:58px;text-align:right;}
 
 /* ── BOARD ── */
@@ -97,11 +117,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pill-driver{background:rgba(167,139,250,0.15);color:#c4b5fd;border:1px solid rgba(167,139,250,0.25);}
 .pill-status{background:rgba(255,255,255,0.07);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);}
 .stop-badge{background:rgba(251,191,36,0.18);color:#fbbf24;border:1px solid rgba(251,191,36,0.28);font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;}
-
-/* Broker lock button */
-.broker-lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.broker-lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);cursor:pointer;}
 .broker-lock:active{opacity:.7;}
-.broker-unlocked{background:rgba(56,189,248,0.15);color:#7dd3fc;border:1px solid rgba(56,189,248,0.25);}
 
 /* ── STATUS CARD COLORS ── */
 .card-intransit{border:2px solid #ea580c;}.card-intransit .card-hdr{background:linear-gradient(90deg,#431407,#7c2d12);}
@@ -119,8 +136,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sdot-dock,.sdot-yard{background:#c4b5fd;}
 .sdot-loaded,.sdot-delivered{background:#86efac;}
 .sdot-none{background:#6b7280;}
-
-/* sub cards */
 .sub-card{margin:0 14px 8px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);}
 .sub-card-hdr{padding:9px 14px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.25);}
 .sub-card-dest{font-size:13px;font-weight:800;color:#fff;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -141,7 +156,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .numpad-btn{background:rgba(255,255,255,0.08);border:none;color:#fff;font-size:22px;font-weight:700;padding:18px;border-radius:14px;cursor:pointer;font-family:inherit;}
 .numpad-btn:active{background:rgba(255,255,255,0.18);}
 .numpad-cancel{background:rgba(220,38,38,0.15);color:#f87171;font-size:14px;font-weight:800;}
-.numpad-del{background:rgba(255,255,255,0.05);font-size:18px;}
 
 /* ── EMPTY / LOADING ── */
 .empty{text-align:center;padding:50px 20px;color:rgba(255,255,255,0.2);}
@@ -157,11 +171,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
-    <div>
+    <div style="flex:1;min-width:0;">
       <div class="hdr-title">🚛 Freight Board</div>
       <div class="hdr-sub" id="hdrSub">Loading...</div>
     </div>
-    <button class="refresh-btn" onclick="loadData()"><span id="refreshIcon">↻</span> Refresh</button>
+    <div class="hdr-btns">
+      <button class="hdr-icon-btn" onclick="toggleSearch()" title="Search">🔍</button>
+      <button class="refresh-btn" onclick="loadData()"><span id="refreshIcon">↻</span> Refresh</button>
+    </div>
+  </div>
+  <!-- Search bar -->
+  <div class="search-bar" id="searchBar">
+    <div class="search-input-wrap">
+      <input class="search-input" id="searchInput" type="text" placeholder="Search by city, load #, driver, broker..." oninput="doSearch()" autocomplete="off" autocorrect="off" autocapitalize="off"/>
+      <button class="search-clear" onclick="clearSearch()">×</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
   </div>
   <div class="week-tabs" id="weekTabs" style="display:none;"></div>
 </div>
@@ -171,7 +196,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- PAGES -->
 <div id="dashPage" style="display:none;"></div>
 <div id="boardPage" style="display:none;"></div>
-
 <div class="last-sync" id="lastSync"></div>
 
 <!-- BOTTOM NAV -->
@@ -189,15 +213,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- PIN MODAL -->
 <div class="pin-overlay" id="pinOverlay" onclick="closePinIfOutside(event)">
   <div class="pin-sheet">
-    <div class="pin-title">🔐 Enter Admin PIN</div>
-    <div class="pin-sub">To view broker & load numbers</div>
+    <div class="pin-title">🔐 Admin PIN</div>
+    <div class="pin-sub">Enter PIN to view broker & load numbers</div>
     <div class="pin-dots" id="pinDots">
-      <div class="pin-dot" id="d0"></div>
-      <div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div>
-      <div class="pin-dot" id="d3"></div>
-      <div class="pin-dot" id="d4"></div>
-      <div class="pin-dot" id="d5"></div>
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div><div class="pin-dot" id="d5"></div>
       <div class="pin-dot" id="d6"></div>
     </div>
     <div class="pin-err" id="pinErr"></div>
@@ -213,7 +234,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="numpad-btn" onclick="pinDigit('9')">9</button>
       <button class="numpad-btn numpad-cancel" onclick="closePin()">Cancel</button>
       <button class="numpad-btn" onclick="pinDigit('0')">0</button>
-      <button class="numpad-btn numpad-del" onclick="pinDel()">⌫</button>
+      <button class="numpad-btn" style="font-size:18px;" onclick="pinDel()">⌫</button>
     </div>
   </div>
 </div>
@@ -224,31 +245,38 @@ const ADMIN_PIN_KEY="fcbv2_adminPin";
 const DEFAULT_ADMIN="5456654";
 const LOCAL_DRIVERS=new Set(["Linas Greiciunas","Theron Mack","John Johnson","Douglas Russo","Emilis Ibianskas","Egidijus Matulis","Oleh Lashkevych"]);
 
-let allWeeks=[], activeWeek=0, currentTab="dash";
-let brokerUnlocked=false, pinBuffer="", pinLoadId=null;
+let allWeeks=[],activeWeek=0,currentTab="dash";
+let brokerUnlocked=false,pinBuffer="";
+let searchOpen=false;
+
+// ── DATE HELPERS (local timezone — fixes the date-off-by-one bug) ─────────────
 const today=new Date(); today.setHours(0,0,0,0);
 const tomorrow=new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
 
-// ── DATE HELPERS ──────────────────────────────────────────────────────────────
+function parseDate(s=""){
+  const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m)return null;
+  // Use local timezone constructor (not ISO string which is UTC)
+  const d=new Date(+m[3], +m[1]-1, +m[2]);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
 function fmtDate(s){
   if(!s)return"—";
   const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if(!m)return s.slice(0,12);
   const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const d=new Date(`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`);
+  // Local timezone constructor to get correct day name
+  const d=new Date(+m[3], +m[1]-1, +m[2]);
   const tm=s.match(/(\d+):?(\d*)\s*(AM|PM)/i);
   return`${days[d.getDay()]} ${m[1]}/${m[2]}${tm?" "+tm[0]:""}`;
 }
-function parseDate(s=""){
-  const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if(!m)return null;
-  const d=new Date(`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`);
-  d.setHours(0,0,0,0); return d;
-}
+
 function parseTS(s=""){
   const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if(!m)return Infinity;
-  const d=new Date(`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`);
+  const d=new Date(+m[3], +m[1]-1, +m[2]);
   const tm=s.match(/(\d+):?(\d*)\s*(AM|PM)/i);
   if(tm){let h=+tm[1],mn=+(tm[2]||0);if(tm[3].toUpperCase()==="PM"&&h!==12)h+=12;if(tm[3].toUpperCase()==="AM"&&h===12)h=0;d.setHours(h,mn);}
   return d.getTime();
@@ -257,6 +285,8 @@ function parseTS(s=""){
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 function showTab(tab){
   currentTab=tab;
+  // Close search when switching tabs
+  if(searchOpen) toggleSearch();
   document.getElementById("dashPage").style.display=tab==="dash"?"block":"none";
   document.getElementById("boardPage").style.display=tab==="board"?"block":"none";
   document.getElementById("weekTabs").style.display=tab==="board"?"flex":"none";
@@ -264,6 +294,93 @@ function showTab(tab){
   document.getElementById("navBoard").classList.toggle("active",tab==="board");
   if(tab==="dash") renderDash();
   if(tab==="board") renderWeek();
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+function toggleSearch(){
+  searchOpen=!searchOpen;
+  const bar=document.getElementById("searchBar");
+  bar.classList.toggle("open",searchOpen);
+  if(searchOpen){
+    setTimeout(()=>document.getElementById("searchInput").focus(),100);
+  } else {
+    clearSearch();
+  }
+}
+
+function clearSearch(){
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchResults").innerHTML="";
+}
+
+function doSearch(){
+  const q=document.getElementById("searchInput").value.trim().toLowerCase();
+  const resultsEl=document.getElementById("searchResults");
+  if(!q||q.length<2){resultsEl.innerHTML="";return;}
+
+  const results=[];
+  allWeeks.forEach((w,wi)=>{
+    (w.groups||[]).forEach((g,gi)=>{
+      const gDriver=g.groupDriver||"";
+      const gTrailer=g.groupTrailer||"";
+      (g.loads||[]).forEach((l,li)=>{
+        const parts=(l.sr||"").split(" - ");
+        const shipper=parts[0]||"";
+        const receiver=parts[1]||"";
+        const broker=l.broker||"";
+        const brokerName=broker.split("&")[0]?.trim()||"";
+        const loadNum=broker.includes("&")?broker.split("&")[1]?.trim()||"":"";
+        const driver=l.driver||gDriver;
+        const status=l.status||g.groupStatus||"";
+
+        const searchable=[shipper,receiver,loadNum,brokerName,driver,gTrailer,l.trailer||""].join(" ").toLowerCase();
+        if(!searchable.includes(q))return;
+
+        results.push({
+          weekLabel:w.label||"Week "+(wi+1),
+          weekIdx:wi,
+          shipper,receiver,loadNum,brokerName,driver,status,
+          pickup:l.pickup,delivery:l.delivery,
+          rate:l.rate,
+          stopNum:li+1,totalStops:g.loads.length,
+          trailer:gTrailer||l.trailer||"",
+        });
+      });
+    });
+  });
+
+  if(!results.length){
+    resultsEl.innerHTML=`<div class="search-empty">No results for "${q}"</div>`;
+    return;
+  }
+
+  const statusColor={
+    "Delivered":"#86efac","Loaded":"#86efac","In Transit":"#fb923c",
+    "Dispatched":"#fb923c","Picked Up":"#fde047","Dock":"#c4b5fd"
+  };
+
+  resultsEl.innerHTML=results.slice(0,20).map((r,i)=>`
+    <div class="search-result-item" onclick="gotoSearchResult(${r.weekIdx})">
+      <div class="search-result-route">
+        ${r.shipper?`<span style="color:rgba(255,255,255,0.5);">${r.shipper}</span> → `:""}
+        <span style="color:#fff;">${r.receiver||"—"}</span>
+      </div>
+      <div class="search-result-meta" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">
+        <span class="search-result-badge" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);">${r.weekLabel}</span>
+        ${r.loadNum?`<span class="search-result-badge" style="background:rgba(56,189,248,0.15);color:#7dd3fc;">🔢 ${r.loadNum}</span>`:""}
+        ${r.driver?`<span class="search-result-badge" style="background:rgba(167,139,250,0.15);color:#c4b5fd;">🧑 ${r.driver}</span>`:""}
+        ${r.trailer?`<span class="search-result-badge" style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.45);">🚛 #${r.trailer}</span>`:""}
+        ${r.status?`<span class="search-result-badge" style="background:${(statusColor[r.status]||"#94a3b8")}22;color:${statusColor[r.status]||"#94a3b8"};">${r.status}</span>`:""}
+        ${r.pickup?`<span class="search-result-badge" style="background:rgba(234,179,8,0.12);color:#fde047;">🛫 ${fmtDate(r.pickup)}</span>`:""}
+      </div>
+    </div>
+  `).join("")+( results.length>20?`<div class="search-empty">${results.length-20} more results — refine your search</div>`:"");
+}
+
+function gotoSearchResult(weekIdx){
+  activeWeek=weekIdx;
+  toggleSearch();
+  showTab("board");
 }
 
 // ── DATA LOAD ─────────────────────────────────────────────────────────────────
@@ -297,7 +414,7 @@ function renderTabs(){
 }
 function switchWeek(i){activeWeek=i; renderTabs(); renderWeek();}
 
-// ── CARD CLASS ────────────────────────────────────────────────────────────────
+// ── CARD HELPERS ──────────────────────────────────────────────────────────────
 function getCardClass(loads,gStatus){
   if(gStatus==="Delivered")return"delivered";
   if(gStatus==="Loaded")return"loaded";
@@ -334,55 +451,25 @@ function gStatusStyle(s){
 
 // ── PIN SYSTEM ────────────────────────────────────────────────────────────────
 function getAdminPin(){return localStorage.getItem(ADMIN_PIN_KEY)||DEFAULT_ADMIN;}
-
-function openPin(){
-  pinBuffer=""; updatePinDots();
-  document.getElementById("pinErr").textContent="";
-  document.getElementById("pinOverlay").classList.add("show");
-}
-function closePin(){
-  pinBuffer=""; updatePinDots();
-  document.getElementById("pinOverlay").classList.remove("show");
-}
+function openPin(){pinBuffer="";updatePinDots();document.getElementById("pinErr").textContent="";document.getElementById("pinOverlay").classList.add("show");}
+function closePin(){pinBuffer="";updatePinDots();document.getElementById("pinOverlay").classList.remove("show");}
 function closePinIfOutside(e){if(e.target===document.getElementById("pinOverlay"))closePin();}
-function updatePinDots(){
-  const maxDots=7;
-  for(let i=0;i<maxDots;i++){
-    const d=document.getElementById("d"+i);
-    if(d) d.classList.toggle("filled",i<pinBuffer.length);
-  }
-}
+function updatePinDots(){for(let i=0;i<7;i++){const d=document.getElementById("d"+i);if(d)d.classList.toggle("filled",i<pinBuffer.length);}}
 function pinDigit(d){
   if(pinBuffer.length>=7)return;
-  pinBuffer+=d;
-  updatePinDots();
-  document.getElementById("pinErr").textContent="";
-  // Auto-check when enough digits entered (try after each digit)
+  pinBuffer+=d; updatePinDots(); document.getElementById("pinErr").textContent="";
   if(pinBuffer===getAdminPin()){
-    brokerUnlocked=true;
-    closePin();
-    if(currentTab==="board") renderWeek();
-    if(currentTab==="dash") renderDash();
+    brokerUnlocked=true; closePin();
+    if(currentTab==="board")renderWeek(); else renderDash();
   } else if(pinBuffer.length>=getAdminPin().length){
     document.getElementById("pinErr").textContent="Wrong PIN — try again";
     setTimeout(()=>{pinBuffer="";updatePinDots();document.getElementById("pinErr").textContent="";},800);
   }
 }
-function pinDel(){
-  pinBuffer=pinBuffer.slice(0,-1);
-  updatePinDots();
-  document.getElementById("pinErr").textContent="";
-}
-
-// ── BROKER LOCK BUTTON ───────────────────────────────────────────────────────
+function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();document.getElementById("pinErr").textContent="";}
 function brokerBtn(){
-  if(brokerUnlocked){
-    brokerUnlocked=false;
-    if(currentTab==="board") renderWeek();
-    if(currentTab==="dash") renderDash();
-  } else {
-    openPin();
-  }
+  if(brokerUnlocked){brokerUnlocked=false;if(currentTab==="board")renderWeek();else renderDash();}
+  else openPin();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -390,116 +477,84 @@ function renderDash(){
   const week=allWeeks[activeWeek]||{groups:[],localDeliveries:[]};
   const allLoads=allWeeks.flatMap(w=>(w.groups||[]).flatMap(g=>(g.loads||[]).map(l=>({...l,weekLabel:w.label,gDriver:g.groupDriver,gStatus:g.groupStatus}))));
 
-  // Today / Tomorrow loads
   const puToday=allLoads.filter(l=>{const d=parseDate(l.pickup);return d&&d.getTime()===today.getTime();}).sort((a,b)=>parseTS(a.pickup)-parseTS(b.pickup));
   const delToday=allLoads.filter(l=>{const d=parseDate(l.delivery);return d&&d.getTime()===today.getTime();}).sort((a,b)=>parseTS(a.delivery)-parseTS(b.delivery));
   const puTomorrow=allLoads.filter(l=>{const d=parseDate(l.pickup);return d&&d.getTime()===tomorrow.getTime();}).sort((a,b)=>parseTS(a.pickup)-parseTS(b.pickup));
 
   function todayCard(l,type){
     const parts=(l.sr||"").split(" - ");
-    const route=(parts[1]||parts[0]||"—").split(",")[0];
-    const time=type==="del"?fmtDate(l.delivery):fmtDate(l.pickup);
+    const dest=(parts[1]||parts[0]||"—").split(",")[0];
+    const timeStr=type==="del"?l.delivery:l.pickup;
+    // Show just time portion, not full date (we already know it's today/tomorrow)
+    const tm=timeStr?timeStr.match(/(\d+):?(\d*)\s*(AM|PM)/i):null;
+    const timeDisplay=tm?tm[0]:"";
     const driver=l.driver||l.gDriver||"";
     return`<div class="today-load-card${type==="del"?" delivery":type==="tom"?" tomorrow":""}" onclick="showTab('board')">
-      <div class="today-load-route">${route}</div>
-      <div class="today-load-meta">${time}${driver?" · "+driver:""}</div>
+      <div class="today-load-route">${dest}</div>
+      <div class="today-load-meta">${timeDisplay}${driver?" · "+driver.split(" ")[0]:""}</div>
     </div>`;
   }
 
-  // Week stats
   const wkGroups=week.groups||[];
   const wkLoads=wkGroups.flatMap(g=>g.loads||[]);
   const gross=wkLoads.reduce((s,l)=>s+(parseFloat(l.rate)||0),0);
   const rolling=wkGroups.filter(g=>g.groupStatus==="In Transit"||g.groupStatus==="Dispatched").length;
   const done=wkGroups.filter(g=>g.groupStatus==="Delivered").length;
-  const netEst=gross*0.9; // rough net
 
-  // Top drivers (across all weeks, delivered only, no local)
   const driverGross={};
   allWeeks.forEach(w=>{
     (w.groups||[]).forEach(g=>{
       const gDrv=(g.groupDriver||"").trim();
-      if(!gDrv||LOCAL_DRIVERS.has(gDrv))return;
-      if(g.groupStatus!=="Delivered")return;
+      if(!gDrv||LOCAL_DRIVERS.has(gDrv)||g.groupStatus!=="Delivered")return;
       (g.loads||[]).forEach(l=>{const r=parseFloat(l.rate)||0;if(r)driverGross[gDrv]=(driverGross[gDrv]||0)+r;});
     });
   });
   const topDrivers=Object.entries(driverGross).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxG=topDrivers.length?topDrivers[0][1]:1;
 
-  const lockBtn=`<button onclick="brokerBtn()" style="float:right;background:${brokerUnlocked?"rgba(56,189,248,.18)":"rgba(255,255,255,.07)"};border:1px solid ${brokerUnlocked?"rgba(56,189,248,.3)":"rgba(255,255,255,.15)"};color:${brokerUnlocked?"#7dd3fc":"rgba(255,255,255,.4)"};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">${brokerUnlocked?"🔓 Lock":"🔐 Show Broker"}</button>`;
+  const lockBtn=`<button onclick="brokerBtn()" style="display:flex;align-items:center;gap:6px;background:${brokerUnlocked?"rgba(56,189,248,.18)":"rgba(255,255,255,.07)"};border:1px solid ${brokerUnlocked?"rgba(56,189,248,.3)":"rgba(255,255,255,.12)"};color:${brokerUnlocked?"#7dd3fc":"rgba(255,255,255,.4)"};padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:12px;">${brokerUnlocked?"🔓 Broker visible — tap to lock":"🔐 Show Broker & Load #"}</button>`;
 
-  document.getElementById("dashPage").innerHTML=`
-  <div class="dash-page">
+  const todayStr=today.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+
+  document.getElementById("dashPage").innerHTML=`<div class="dash-page">
     ${lockBtn}
-    <div style="clear:both;height:8px;"></div>
-
-    <!-- Today section -->
     <div class="today-banner">
-      <div class="today-label">📅 ${today.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</div>
+      <div class="today-label">📅 ${todayStr}</div>
       <div class="today-grid">
         <div>
           <div class="today-section-title" style="color:#fde047;">🛫 Pickups (${puToday.length})</div>
-          ${puToday.length?puToday.map(l=>todayCard(l,"pu")).join(""):`<div class="today-empty">None today</div>`}
+          ${puToday.length?puToday.map(l=>todayCard(l,"pu")).join(""):`<div class="today-empty">None</div>`}
         </div>
         <div>
           <div class="today-section-title" style="color:#86efac;">🛬 Deliveries (${delToday.length})</div>
-          ${delToday.length?delToday.map(l=>todayCard(l,"del")).join(""):`<div class="today-empty">None today</div>`}
+          ${delToday.length?delToday.map(l=>todayCard(l,"del")).join(""):`<div class="today-empty">None</div>`}
         </div>
       </div>
-      ${puTomorrow.length?`
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
+      ${puTomorrow.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
         <div class="today-section-title" style="color:#93c5fd;">🕐 Tomorrow Pickups (${puTomorrow.length})</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">${puTomorrow.map(l=>todayCard(l,"tom")).join("")}</div>
       </div>`:""}
     </div>
-
-    <!-- Stat cards -->
     <div class="dash-stats-grid">
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon">📦</div>
-        <div class="dash-stat-label">This Week</div>
-        <div class="dash-stat-value">${wkGroups.length}</div>
-        <div class="dash-stat-sub">${wkLoads.length} loads</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon">💰</div>
-        <div class="dash-stat-label">Gross</div>
-        <div class="dash-stat-value" style="font-size:18px;">$${(gross/1000).toFixed(1)}k</div>
-        <div class="dash-stat-sub">Est. net $${(netEst/1000).toFixed(1)}k</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon" style="color:#fb923c;">🚛</div>
-        <div class="dash-stat-label">Rolling</div>
-        <div class="dash-stat-value" style="color:#fb923c;">${rolling}</div>
-        <div class="dash-stat-sub">in transit</div>
-      </div>
-      <div class="dash-stat-card">
-        <div class="dash-stat-icon" style="color:#34d399;">✅</div>
-        <div class="dash-stat-label">Delivered</div>
-        <div class="dash-stat-value" style="color:#34d399;">${done}</div>
-        <div class="dash-stat-sub">this week</div>
-      </div>
+      <div class="dash-stat-card"><div class="dash-stat-icon">📦</div><div class="dash-stat-label">This Week</div><div class="dash-stat-value">${wkGroups.length}</div><div class="dash-stat-sub">${wkLoads.length} loads</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-icon">💰</div><div class="dash-stat-label">Gross</div><div class="dash-stat-value" style="font-size:18px;">$${(gross/1000).toFixed(1)}k</div><div class="dash-stat-sub">Est. net $${(gross*.9/1000).toFixed(1)}k</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-icon">🚛</div><div class="dash-stat-label">Rolling</div><div class="dash-stat-value" style="color:#fb923c;">${rolling}</div><div class="dash-stat-sub">in transit</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-icon">✅</div><div class="dash-stat-label">Delivered</div><div class="dash-stat-value" style="color:#34d399;">${done}</div><div class="dash-stat-sub">this week</div></div>
     </div>
-
-    <!-- Top drivers -->
-    ${topDrivers.length?`
-    <div class="dash-section-title">🏆 Top Drivers — All Time</div>
-    ${topDrivers.map((dr,i)=>`
-    <div class="driver-row">
+    ${topDrivers.length?`<div class="dash-section-title">🏆 Top Drivers — All Time</div>
+    ${topDrivers.map((dr,i)=>`<div class="driver-row">
       <div class="driver-rank">${i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1)}</div>
       <div class="driver-name">${dr[0]}</div>
       <div class="driver-bar-wrap"><div class="driver-bar" style="width:${Math.round(dr[1]/maxG*100)}%;background:${i===0?"#f59e0b":i===1?"#94a3b8":"#3b82f6"};"></div></div>
       <div class="driver-gross">$${(dr[1]/1000).toFixed(1)}k</div>
     </div>`).join("")}`:""}
-
   </div>`;
 }
 
 // ── BOARD ─────────────────────────────────────────────────────────────────────
 function renderWeek(){
   const week=allWeeks[activeWeek];
-  if(!week){document.getElementById("boardPage").innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No data loaded</div></div>`;return;}
+  if(!week){document.getElementById("boardPage").innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No data</div></div>`;return;}
   const groups=week.groups||[];
   const locals=week.localDeliveries||[];
   const xdrops=week.crossdockDrops||[];
@@ -510,7 +565,6 @@ function renderWeek(){
 
   const lockBtn=`<button onclick="brokerBtn()" style="margin:10px 14px 0;display:flex;align-items:center;gap:6px;background:${brokerUnlocked?"rgba(56,189,248,.18)":"rgba(255,255,255,.07)"};border:1px solid ${brokerUnlocked?"rgba(56,189,248,.3)":"rgba(255,255,255,.12)"};color:${brokerUnlocked?"#7dd3fc":"rgba(255,255,255,.45)"};padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;">${brokerUnlocked?"🔓 Broker & Load # visible — tap to lock":"🔐 Show Broker & Load #"}</button>`;
 
-  // Buckets
   const b1=[],b2=[],b4=[],b5=[],bRest=[];
   groups.forEach(g=>{
     const loads=g.loads||[];
@@ -530,16 +584,14 @@ function renderWeek(){
 
   const localToday=locals.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===today.getTime();});
   const localTomorrow=locals.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===tomorrow.getTime();});
-  const localOther=locals.filter(r=>{const pd=parseDate(r.datetime);return !pd||(pd.getTime()!==today.getTime()&&pd.getTime()!==tomorrow.getTime());});
+  const localOther=locals.filter(r=>{const pd=parseDate(r.datetime);return!pd||(pd.getTime()!==today.getTime()&&pd.getTime()!==tomorrow.getTime());});
   const xdToday=xdrops.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===today.getTime();});
   const xdTomorrow=xdrops.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===tomorrow.getTime();});
-  const xdOther=xdrops.filter(r=>{const pd=parseDate(r.datetime);return !pd||(pd.getTime()!==today.getTime()&&pd.getTime()!==tomorrow.getTime());});
+  const xdOther=xdrops.filter(r=>{const pd=parseDate(r.datetime);return!pd||(pd.getTime()!==today.getTime()&&pd.getTime()!==tomorrow.getTime());});
 
-  let gi=0, html="";
+  let gi=0,html="";
 
-  function secHdr(label,color,count){
-    return`<div class="sec-hdr"><span class="sec-hdr-label" style="color:${color}">${label}</span><span class="sec-hdr-count">${count}</span></div>`;
-  }
+  function secHdr(label,color,count){return`<div class="sec-hdr"><span class="sec-hdr-label" style="color:${color}">${label}</span><span class="sec-hdr-count">${count}</span></div>`;}
 
   function trailerCard(group){
     gi++;
@@ -549,18 +601,13 @@ function renderWeek(){
     const truck=group.groupTruck||"";
     const trailer=group.groupTrailer||"";
     const gStatus=group.groupStatus||"Pending";
-
     const loadsHtml=loads.map((l,li)=>{
       const parts=(l.sr||"").split(" - ");
       const shipper=parts[0]||"";
       const receiver=parts[1]||"";
       const status=l.status||"";
-      let brokerName="", loadNum="";
-      if(l.broker){
-        const bp=l.broker.split("&");
-        brokerName=bp[0]?.trim()||"";
-        loadNum=bp[1]?.trim()||"";
-      }
+      let brokerName="",loadNum="";
+      if(l.broker){const bp=l.broker.split("&");brokerName=bp[0]?.trim()||"";loadNum=bp[1]?.trim()||"";}
       const lDriver=(l.driver||"").trim();
       return`<div class="load-row">
         ${loads.length>1?`<div style="margin-bottom:4px"><span class="stop-badge">Stop ${li+1}</span></div>`:""}
@@ -577,7 +624,6 @@ function renderWeek(){
         </div>
       </div>`;
     }).join("");
-
     return`<div class="card card-${cc}">
       <div class="card-hdr">
         <span class="t-badge">T${gi}</span>
@@ -592,14 +638,9 @@ function renderWeek(){
   }
 
   function subCard(r,icon,color){
-    const broker=r.broker||"";
-    const loadNum=r.loadNum||"";
+    const broker=r.broker||"";const loadNum=r.loadNum||"";
     return`<div class="sub-card">
-      <div class="sub-card-hdr">
-        <span style="font-size:16px;flex-shrink:0">${icon}</span>
-        <span class="sub-card-dest" style="color:${color}">${r.destination||r.location||"—"}</span>
-        <span class="sub-card-date">${fmtDate(r.datetime)}</span>
-      </div>
+      <div class="sub-card-hdr"><span style="font-size:16px;flex-shrink:0">${icon}</span><span class="sub-card-dest" style="color:${color}">${r.destination||r.location||"—"}</span><span class="sub-card-date">${fmtDate(r.datetime)}</span></div>
       <div class="sub-card-body">
         ${r.driver?`<span class="pill pill-driver">🧑 ${r.driver}</span>`:""}
         ${r.trailer?`<span class="pill" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25);">🚛 #${r.trailer}</span>`:""}
@@ -612,45 +653,31 @@ function renderWeek(){
 
   if(b1.length){html+=secHdr("🚛 Multi-Stop · In Transit","#fb923c",b1.length);b1.forEach(g=>{html+=trailerCard(g);});}
   if(b2.length){html+=secHdr("🚚 In Transit","#fb923c",b2.length);b2.forEach(g=>{html+=trailerCard(g);});}
-  if(localToday.length||xdToday.length){
-    html+=secHdr("🏠 Today — Local & Crossdock","#34d399",localToday.length+xdToday.length);
-    localToday.forEach(r=>{html+=subCard(r,"🏠","#34d399");});
-    xdToday.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});
-  }
+  if(localToday.length||xdToday.length){html+=secHdr("🏠 Today — Local & Crossdock","#34d399",localToday.length+xdToday.length);localToday.forEach(r=>{html+=subCard(r,"🏠","#34d399");});xdToday.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});}
   if(b4.length){html+=secHdr("📅 Today — Pickups","#fde047",b4.length);b4.forEach(g=>{html+=trailerCard(g);});}
   if(b5.length){html+=secHdr("🔶 Tomorrow — Pickups","#f87171",b5.length);b5.forEach(g=>{html+=trailerCard(g);});}
-  if(localTomorrow.length||xdTomorrow.length){
-    html+=secHdr("🏠 Tomorrow — Local & Crossdock","#6ee7b7",localTomorrow.length+xdTomorrow.length);
-    localTomorrow.forEach(r=>{html+=subCard(r,"🏠","#6ee7b7");});
-    xdTomorrow.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});
-  }
+  if(localTomorrow.length||xdTomorrow.length){html+=secHdr("🏠 Tomorrow — Local & Crossdock","#6ee7b7",localTomorrow.length+xdTomorrow.length);localTomorrow.forEach(r=>{html+=subCard(r,"🏠","#6ee7b7");});xdTomorrow.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});}
   if(bRest.length){html+=secHdr("📆 Future / Other","#94a3b8",bRest.length);bRest.forEach(g=>{html+=trailerCard(g);});}
-  if(localOther.length||xdOther.length){
-    html+=secHdr("📋 Other Local & Crossdock","#94a3b8",localOther.length+xdOther.length);
-    localOther.forEach(r=>{html+=subCard(r,"🏠","#94a3b8");});
-    xdOther.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});
-  }
-
+  if(localOther.length||xdOther.length){html+=secHdr("📋 Other Local & Crossdock","#94a3b8",localOther.length+xdOther.length);localOther.forEach(r=>{html+=subCard(r,"🏠","#94a3b8");});xdOther.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});}
   if(!html)html=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No loads this week</div></div>`;
 
-  document.getElementById("boardPage").innerHTML=`
-    <div class="board-page">
-      ${lockBtn}
-      <div class="totals" style="margin-top:10px;">
-        <div class="total-item"><div class="total-label">Trailers</div><div class="total-value">${groups.length}</div></div>
-        <div class="total-item"><div class="total-label">Loads</div><div class="total-value">${groups.flatMap(g=>g.loads||[]).length}</div></div>
-        <div class="total-item"><div class="total-label" style="color:#fb923c">Rolling</div><div class="total-value" style="color:#fb923c">${rolling}</div></div>
-        <div class="total-item"><div class="total-label" style="color:#34d399">Done</div><div class="total-value" style="color:#34d399">${done}</div></div>
-        <div class="total-item"><div class="total-label" style="color:#93c5fd">Gross</div><div class="total-value" style="color:#93c5fd;font-size:13px">$${(gross/1000).toFixed(1)}k</div></div>
-      </div>
-      ${html}
-    </div>`;
+  document.getElementById("boardPage").innerHTML=`<div class="board-page">
+    ${lockBtn}
+    <div class="totals" style="margin-top:10px;">
+      <div class="total-item"><div class="total-label">Trailers</div><div class="total-value">${groups.length}</div></div>
+      <div class="total-item"><div class="total-label">Loads</div><div class="total-value">${groups.flatMap(g=>g.loads||[]).length}</div></div>
+      <div class="total-item"><div class="total-label" style="color:#fb923c">Rolling</div><div class="total-value" style="color:#fb923c">${rolling}</div></div>
+      <div class="total-item"><div class="total-label" style="color:#34d399">Done</div><div class="total-value" style="color:#34d399">${done}</div></div>
+      <div class="total-item"><div class="total-label" style="color:#93c5fd">Gross</div><div class="total-value" style="color:#93c5fd;font-size:13px">$${(gross/1000).toFixed(1)}k</div></div>
+    </div>
+    ${html}
+  </div>`;
 }
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 showTab("dash");
 loadData();
-setInterval(loadData, 60000);
+setInterval(loadData,60000);
 </script>
 </body>
 </html>
