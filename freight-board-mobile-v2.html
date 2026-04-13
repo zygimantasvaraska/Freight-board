@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0a1628"/>
+<title>🚛 Freight Board</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1929;min-height:100vh;padding-bottom:80px;}
+
+/* ── HEADER ── */
+.hdr{background:#0f1f3d;padding:14px 16px 0;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,0.07);}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.hdr-title{color:#fff;font-size:17px;font-weight:800;letter-spacing:-.3px;}
+.hdr-sub{color:rgba(255,255,255,0.35);font-size:10px;margin-top:1px;}
+.refresh-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.refresh-btn:active{opacity:.7;}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#0f1f3d;border-top:1px solid rgba(255,255,255,0.08);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 8px;cursor:pointer;border:none;background:none;color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;gap:3px;transition:color .15s;}
+.nav-btn.active{color:#3b82f6;}
+.nav-btn svg{width:22px;height:22px;stroke-width:2;}
+
+/* ── WEEK TABS ── */
+.week-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px;}
+.week-tabs::-webkit-scrollbar{display:none;}
+.week-tab{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;flex-shrink:0;}
+.week-tab.active{background:#2563eb;border-color:#2563eb;color:#fff;}
+
+/* ── SYNC BAR ── */
+.sync-bar{padding:5px 16px;font-size:11px;font-weight:700;text-align:center;}
+.sync-ok{background:#052e16;color:#34d399;}
+.sync-err{background:#450a0a;color:#fca5a5;}
+.sync-loading{background:#0c1a35;color:#93c5fd;}
+
+/* ── DASHBOARD ── */
+.dash-page{padding:12px 14px;}
+.today-banner{background:linear-gradient(135deg,#1e3a5f,#0f2040);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:14px;margin-bottom:14px;}
+.today-label{font-size:9px;font-weight:800;color:#93c5fd;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
+.today-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.today-section-title{font-size:10px;font-weight:800;margin-bottom:5px;}
+.today-load-card{background:rgba(0,0,0,0.3);border-radius:10px;padding:9px 11px;margin-bottom:5px;border-left:3px solid #fbbf24;cursor:pointer;}
+.today-load-card.delivery{border-left-color:#34d399;}
+.today-load-card.tomorrow{border-left-color:#3b82f6;}
+.today-load-route{font-size:12px;font-weight:700;color:#fff;line-height:1.3;}
+.today-load-meta{font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;}
+.today-empty{font-size:11px;color:rgba(255,255,255,0.2);text-align:center;padding:8px;}
+.dash-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.dash-stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px;}
+.dash-stat-icon{font-size:18px;margin-bottom:6px;}
+.dash-stat-label{font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
+.dash-stat-value{font-size:22px;font-weight:800;color:#fff;}
+.dash-stat-sub{font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;}
+.dash-section-title{font-size:11px;font-weight:800;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px;}
+.driver-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.06);}
+.driver-rank{font-size:16px;width:24px;flex-shrink:0;}
+.driver-name{flex:1;font-size:13px;font-weight:700;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.driver-bar-wrap{width:80px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;flex-shrink:0;}
+.driver-bar{height:100%;border-radius:3px;background:#3b82f6;}
+.driver-gross{font-size:12px;font-weight:800;color:#34d399;flex-shrink:0;min-width:58px;text-align:right;}
+
+/* ── BOARD ── */
+.board-page{padding-bottom:8px;}
+.totals{margin:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 16px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none;}
+.totals::-webkit-scrollbar{display:none;}
+.total-item{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:70px;flex:1;}
+.total-item+.total-item{border-left:1px solid rgba(255,255,255,0.07);}
+.total-label{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.total-value{font-size:16px;font-weight:800;color:#fff;}
+.sec-hdr{padding:10px 16px 5px;display:flex;align-items:center;gap:8px;}
+.sec-hdr-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;}
+.sec-hdr-count{background:rgba(255,255,255,0.09);color:rgba(255,255,255,0.45);font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px;}
+
+/* ── TRAILER CARD ── */
+.card{margin:0 14px 10px;border-radius:16px;overflow:hidden;}
+.card-hdr{padding:10px 14px;display:flex;align-items:center;gap:10px;}
+.t-badge{font-size:10px;font-weight:900;color:#fff;background:#2563eb;padding:3px 10px;border-radius:10px;flex-shrink:0;letter-spacing:.04em;}
+.driver-block{flex:1;min-width:0;}
+.driver-name-hdr{font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.truck-info{font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px;white-space:nowrap;}
+.no-driver{font-size:12px;color:#f87171;font-weight:700;}
+.load-count{font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;flex-shrink:0;}
+.group-status{font-size:10px;font-weight:800;padding:3px 9px;border-radius:10px;flex-shrink:0;}
+.loads-wrap{background:rgba(0,0,0,0.28);}
+.load-row{padding:10px 14px;border-top:1px solid rgba(255,255,255,0.04);}
+.load-row:first-child{border-top:none;}
+.load-from-lbl{font-size:10px;color:rgba(255,255,255,0.35);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px;}
+.load-city{font-size:14px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:4px;}
+.pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.pill{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;}
+.pill-pickup{background:rgba(234,179,8,0.18);color:#fde047;border:1px solid rgba(234,179,8,0.28);}
+.pill-delivery{background:rgba(99,102,241,0.18);color:#a5b4fc;border:1px solid rgba(99,102,241,0.28);}
+.pill-driver{background:rgba(167,139,250,0.15);color:#c4b5fd;border:1px solid rgba(167,139,250,0.25);}
+.pill-status{background:rgba(255,255,255,0.07);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);}
+.stop-badge{background:rgba(251,191,36,0.18);color:#fbbf24;border:1px solid rgba(251,191,36,0.28);font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;}
+
+/* Broker lock button */
+.broker-lock{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.broker-lock:active{opacity:.7;}
+.broker-unlocked{background:rgba(56,189,248,0.15);color:#7dd3fc;border:1px solid rgba(56,189,248,0.25);}
+
+/* ── STATUS CARD COLORS ── */
+.card-intransit{border:2px solid #ea580c;}.card-intransit .card-hdr{background:linear-gradient(90deg,#431407,#7c2d12);}
+.card-today{border:2px solid #ca8a04;}.card-today .card-hdr{background:linear-gradient(90deg,#422006,#713f12);}
+.card-tomorrow{border:2px solid #dc2626;}.card-tomorrow .card-hdr{background:linear-gradient(90deg,#450a0a,#7f1d1d);}
+.card-future{border:1px solid rgba(255,255,255,0.1);}.card-future .card-hdr{background:linear-gradient(90deg,#1e293b,#334155);}
+.card-dock{border:2px solid #7c3aed;}.card-dock .card-hdr{background:linear-gradient(90deg,#2e1065,#4c1d95);}
+.card-loaded{border:2px solid #16a34a;}.card-loaded .card-hdr{background:linear-gradient(90deg,#052e16,#14532d);}
+.card-delivered{border:2px solid #16a34a;}.card-delivered .card-hdr{background:linear-gradient(90deg,#052e16,#14532d);}
+.card-nodate{border:1px solid rgba(255,255,255,0.07);}.card-nodate .card-hdr{background:linear-gradient(90deg,#1e293b,#334155);}
+.card-pickedup{border:2px solid #ca8a04;}.card-pickedup .card-hdr{background:linear-gradient(90deg,#422006,#713f12);}
+.sdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.sdot-intransit,.sdot-dispatched{background:#fb923c;}
+.sdot-pickedup{background:#fde047;}
+.sdot-dock,.sdot-yard{background:#c4b5fd;}
+.sdot-loaded,.sdot-delivered{background:#86efac;}
+.sdot-none{background:#6b7280;}
+
+/* sub cards */
+.sub-card{margin:0 14px 8px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);}
+.sub-card-hdr{padding:9px 14px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.25);}
+.sub-card-dest{font-size:13px;font-weight:800;color:#fff;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sub-card-date{font-size:11px;color:rgba(255,255,255,0.35);flex-shrink:0;}
+.sub-card-body{padding:8px 14px;display:flex;flex-wrap:wrap;gap:5px;}
+
+/* ── PIN MODAL ── */
+.pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:none;align-items:flex-end;justify-content:center;}
+.pin-overlay.show{display:flex;}
+.pin-sheet{background:#1a2e50;border-radius:24px 24px 0 0;padding:24px 24px 40px;width:100%;max-width:400px;}
+.pin-title{font-size:16px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px;}
+.pin-sub{font-size:12px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:20px;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.2);transition:all .15s;}
+.pin-dot.filled{background:#3b82f6;border-color:#3b82f6;}
+.pin-err{color:#f87171;font-size:12px;font-weight:700;text-align:center;margin-bottom:10px;min-height:18px;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.numpad-btn{background:rgba(255,255,255,0.08);border:none;color:#fff;font-size:22px;font-weight:700;padding:18px;border-radius:14px;cursor:pointer;font-family:inherit;}
+.numpad-btn:active{background:rgba(255,255,255,0.18);}
+.numpad-cancel{background:rgba(220,38,38,0.15);color:#f87171;font-size:14px;font-weight:800;}
+.numpad-del{background:rgba(255,255,255,0.05);font-size:18px;}
+
+/* ── EMPTY / LOADING ── */
+.empty{text-align:center;padding:50px 20px;color:rgba(255,255,255,0.2);}
+.empty-icon{font-size:44px;margin-bottom:10px;}
+.empty-msg{font-size:14px;font-weight:700;}
+.spinner{display:inline-block;animation:spin 1s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.last-sync{text-align:center;font-size:10px;color:rgba(255,255,255,0.12);padding:12px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div class="hdr-title">🚛 Freight Board</div>
+      <div class="hdr-sub" id="hdrSub">Loading...</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()"><span id="refreshIcon">↻</span> Refresh</button>
+  </div>
+  <div class="week-tabs" id="weekTabs" style="display:none;"></div>
+</div>
+
+<div class="sync-bar sync-loading" id="syncBar">⏳ Connecting...</div>
+
+<!-- PAGES -->
+<div id="dashPage" style="display:none;"></div>
+<div id="boardPage" style="display:none;"></div>
+
+<div class="last-sync" id="lastSync"></div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="navDash" onclick="showTab('dash')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </button>
+  <button class="nav-btn" id="navBoard" onclick="showTab('board')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    Board
+  </button>
+</nav>
+
+<!-- PIN MODAL -->
+<div class="pin-overlay" id="pinOverlay" onclick="closePinIfOutside(event)">
+  <div class="pin-sheet">
+    <div class="pin-title">🔐 Enter Admin PIN</div>
+    <div class="pin-sub">To view broker & load numbers</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div>
+      <div class="pin-dot" id="d5"></div>
+      <div class="pin-dot" id="d6"></div>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="pinDigit('1')">1</button>
+      <button class="numpad-btn" onclick="pinDigit('2')">2</button>
+      <button class="numpad-btn" onclick="pinDigit('3')">3</button>
+      <button class="numpad-btn" onclick="pinDigit('4')">4</button>
+      <button class="numpad-btn" onclick="pinDigit('5')">5</button>
+      <button class="numpad-btn" onclick="pinDigit('6')">6</button>
+      <button class="numpad-btn" onclick="pinDigit('7')">7</button>
+      <button class="numpad-btn" onclick="pinDigit('8')">8</button>
+      <button class="numpad-btn" onclick="pinDigit('9')">9</button>
+      <button class="numpad-btn numpad-cancel" onclick="closePin()">Cancel</button>
+      <button class="numpad-btn" onclick="pinDigit('0')">0</button>
+      <button class="numpad-btn numpad-del" onclick="pinDel()">⌫</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbwvzKkQR2jRUL6-pPHET8JxUbPgVgGdRMs3BjmKyCrsNgHqo3GhUTUUw-qky61e-FQfqQ/exec";
+const ADMIN_PIN_KEY="fcbv2_adminPin";
+const DEFAULT_ADMIN="5456654";
+const LOCAL_DRIVERS=new Set(["Linas Greiciunas","Theron Mack","John Johnson","Douglas Russo","Emilis Ibianskas","Egidijus Matulis","Oleh Lashkevych"]);
+
+let allWeeks=[], activeWeek=0, currentTab="dash";
+let brokerUnlocked=false, pinBuffer="", pinLoadId=null;
+const today=new Date(); today.setHours(0,0,0,0);
+const tomorrow=new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+
+// ── DATE HELPERS ──────────────────────────────────────────────────────────────
+function fmtDate(s){
+  if(!s)return"—";
+  const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m)return s.slice(0,12);
+  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const d=new Date(`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`);
+  const tm=s.match(/(\d+):?(\d*)\s*(AM|PM)/i);
+  return`${days[d.getDay()]} ${m[1]}/${m[2]}${tm?" "+tm[0]:""}`;
+}
+function parseDate(s=""){
+  const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m)return null;
+  const d=new Date(`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`);
+  d.setHours(0,0,0,0); return d;
+}
+function parseTS(s=""){
+  const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m)return Infinity;
+  const d=new Date(`${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`);
+  const tm=s.match(/(\d+):?(\d*)\s*(AM|PM)/i);
+  if(tm){let h=+tm[1],mn=+(tm[2]||0);if(tm[3].toUpperCase()==="PM"&&h!==12)h+=12;if(tm[3].toUpperCase()==="AM"&&h===12)h=0;d.setHours(h,mn);}
+  return d.getTime();
+}
+
+// ── TAB NAVIGATION ────────────────────────────────────────────────────────────
+function showTab(tab){
+  currentTab=tab;
+  document.getElementById("dashPage").style.display=tab==="dash"?"block":"none";
+  document.getElementById("boardPage").style.display=tab==="board"?"block":"none";
+  document.getElementById("weekTabs").style.display=tab==="board"?"flex":"none";
+  document.getElementById("navDash").classList.toggle("active",tab==="dash");
+  document.getElementById("navBoard").classList.toggle("active",tab==="board");
+  if(tab==="dash") renderDash();
+  if(tab==="board") renderWeek();
+}
+
+// ── DATA LOAD ─────────────────────────────────────────────────────────────────
+async function loadData(){
+  document.getElementById("refreshIcon").className="spinner";
+  const bar=document.getElementById("syncBar");
+  bar.className="sync-bar sync-loading"; bar.textContent="⏳ Loading...";
+  try{
+    const r=await fetch(SHEETS_URL,{redirect:"follow"});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    const weeks=Array.isArray(d)?d:(d.weeks||[]);
+    if(!weeks.length){bar.className="sync-bar sync-err";bar.textContent="⚠ No data yet";document.getElementById("refreshIcon").className="";return;}
+    allWeeks=weeks;
+    bar.className="sync-bar sync-ok"; bar.textContent="✓ Live";
+    document.getElementById("lastSync").textContent="Updated "+new Date().toLocaleTimeString();
+    document.getElementById("refreshIcon").className="";
+    renderTabs();
+    if(currentTab==="dash") renderDash();
+    else renderWeek();
+  }catch(e){
+    bar.className="sync-bar sync-err"; bar.textContent="⚠ Cannot connect";
+    document.getElementById("refreshIcon").className="";
+  }
+}
+
+function renderTabs(){
+  const el=document.getElementById("weekTabs");
+  el.innerHTML=allWeeks.map((w,i)=>`<div class="week-tab${i===activeWeek?" active":""}" onclick="switchWeek(${i})">${w.label||"Week "+(i+1)}</div>`).join("");
+  document.getElementById("hdrSub").textContent=allWeeks[activeWeek]?.label||"";
+}
+function switchWeek(i){activeWeek=i; renderTabs(); renderWeek();}
+
+// ── CARD CLASS ────────────────────────────────────────────────────────────────
+function getCardClass(loads,gStatus){
+  if(gStatus==="Delivered")return"delivered";
+  if(gStatus==="Loaded")return"loaded";
+  if(gStatus==="In Transit"||gStatus==="Dispatched")return"intransit";
+  if(gStatus==="Dock"||gStatus==="Yard")return"dock";
+  for(const l of loads){
+    const s=l.status||"";
+    if(s==="Delivered")return"delivered";
+    if(s==="Loaded")return"loaded";
+    if(s==="In Transit"||s==="Dispatched")return"intransit";
+    if(s==="Dock")return"dock";
+    if(s==="Picked Up")return"pickedup";
+  }
+  const earliest=loads.reduce((mn,l)=>{const pd=parseDate(l.pickup);return pd&&(!mn||pd<mn)?pd:mn;},null);
+  if(!earliest)return"nodate";
+  if(earliest.getTime()===today.getTime())return"today";
+  if(earliest.getTime()===tomorrow.getTime())return"tomorrow";
+  if(earliest>tomorrow)return"future";
+  return"nodate";
+}
+function sdotClass(s){
+  if(s==="In Transit"||s==="Dispatched")return"sdot-intransit";
+  if(s==="Picked Up")return"sdot-pickedup";
+  if(s==="Dock"||s==="Yard")return"sdot-dock";
+  if(s==="Loaded"||s==="Delivered")return"sdot-delivered";
+  return"sdot-none";
+}
+function gStatusStyle(s){
+  if(s==="In Transit"||s==="Dispatched")return"background:rgba(251,146,60,.18);color:#fb923c;border:1px solid rgba(251,146,60,.3);";
+  if(s==="Delivered"||s==="Loaded")return"background:rgba(134,239,172,.15);color:#86efac;border:1px solid rgba(134,239,172,.25);";
+  if(s==="Dock")return"background:rgba(196,181,253,.15);color:#c4b5fd;border:1px solid rgba(196,181,253,.25);";
+  return"background:rgba(255,255,255,.07);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1);";
+}
+
+// ── PIN SYSTEM ────────────────────────────────────────────────────────────────
+function getAdminPin(){return localStorage.getItem(ADMIN_PIN_KEY)||DEFAULT_ADMIN;}
+
+function openPin(){
+  pinBuffer=""; updatePinDots();
+  document.getElementById("pinErr").textContent="";
+  document.getElementById("pinOverlay").classList.add("show");
+}
+function closePin(){
+  pinBuffer=""; updatePinDots();
+  document.getElementById("pinOverlay").classList.remove("show");
+}
+function closePinIfOutside(e){if(e.target===document.getElementById("pinOverlay"))closePin();}
+function updatePinDots(){
+  const maxDots=7;
+  for(let i=0;i<maxDots;i++){
+    const d=document.getElementById("d"+i);
+    if(d) d.classList.toggle("filled",i<pinBuffer.length);
+  }
+}
+function pinDigit(d){
+  if(pinBuffer.length>=7)return;
+  pinBuffer+=d;
+  updatePinDots();
+  document.getElementById("pinErr").textContent="";
+  // Auto-check when enough digits entered (try after each digit)
+  if(pinBuffer===getAdminPin()){
+    brokerUnlocked=true;
+    closePin();
+    if(currentTab==="board") renderWeek();
+    if(currentTab==="dash") renderDash();
+  } else if(pinBuffer.length>=getAdminPin().length){
+    document.getElementById("pinErr").textContent="Wrong PIN — try again";
+    setTimeout(()=>{pinBuffer="";updatePinDots();document.getElementById("pinErr").textContent="";},800);
+  }
+}
+function pinDel(){
+  pinBuffer=pinBuffer.slice(0,-1);
+  updatePinDots();
+  document.getElementById("pinErr").textContent="";
+}
+
+// ── BROKER LOCK BUTTON ───────────────────────────────────────────────────────
+function brokerBtn(){
+  if(brokerUnlocked){
+    brokerUnlocked=false;
+    if(currentTab==="board") renderWeek();
+    if(currentTab==="dash") renderDash();
+  } else {
+    openPin();
+  }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDash(){
+  const week=allWeeks[activeWeek]||{groups:[],localDeliveries:[]};
+  const allLoads=allWeeks.flatMap(w=>(w.groups||[]).flatMap(g=>(g.loads||[]).map(l=>({...l,weekLabel:w.label,gDriver:g.groupDriver,gStatus:g.groupStatus}))));
+
+  // Today / Tomorrow loads
+  const puToday=allLoads.filter(l=>{const d=parseDate(l.pickup);return d&&d.getTime()===today.getTime();}).sort((a,b)=>parseTS(a.pickup)-parseTS(b.pickup));
+  const delToday=allLoads.filter(l=>{const d=parseDate(l.delivery);return d&&d.getTime()===today.getTime();}).sort((a,b)=>parseTS(a.delivery)-parseTS(b.delivery));
+  const puTomorrow=allLoads.filter(l=>{const d=parseDate(l.pickup);return d&&d.getTime()===tomorrow.getTime();}).sort((a,b)=>parseTS(a.pickup)-parseTS(b.pickup));
+
+  function todayCard(l,type){
+    const parts=(l.sr||"").split(" - ");
+    const route=(parts[1]||parts[0]||"—").split(",")[0];
+    const time=type==="del"?fmtDate(l.delivery):fmtDate(l.pickup);
+    const driver=l.driver||l.gDriver||"";
+    return`<div class="today-load-card${type==="del"?" delivery":type==="tom"?" tomorrow":""}" onclick="showTab('board')">
+      <div class="today-load-route">${route}</div>
+      <div class="today-load-meta">${time}${driver?" · "+driver:""}</div>
+    </div>`;
+  }
+
+  // Week stats
+  const wkGroups=week.groups||[];
+  const wkLoads=wkGroups.flatMap(g=>g.loads||[]);
+  const gross=wkLoads.reduce((s,l)=>s+(parseFloat(l.rate)||0),0);
+  const rolling=wkGroups.filter(g=>g.groupStatus==="In Transit"||g.groupStatus==="Dispatched").length;
+  const done=wkGroups.filter(g=>g.groupStatus==="Delivered").length;
+  const netEst=gross*0.9; // rough net
+
+  // Top drivers (across all weeks, delivered only, no local)
+  const driverGross={};
+  allWeeks.forEach(w=>{
+    (w.groups||[]).forEach(g=>{
+      const gDrv=(g.groupDriver||"").trim();
+      if(!gDrv||LOCAL_DRIVERS.has(gDrv))return;
+      if(g.groupStatus!=="Delivered")return;
+      (g.loads||[]).forEach(l=>{const r=parseFloat(l.rate)||0;if(r)driverGross[gDrv]=(driverGross[gDrv]||0)+r;});
+    });
+  });
+  const topDrivers=Object.entries(driverGross).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxG=topDrivers.length?topDrivers[0][1]:1;
+
+  const lockBtn=`<button onclick="brokerBtn()" style="float:right;background:${brokerUnlocked?"rgba(56,189,248,.18)":"rgba(255,255,255,.07)"};border:1px solid ${brokerUnlocked?"rgba(56,189,248,.3)":"rgba(255,255,255,.15)"};color:${brokerUnlocked?"#7dd3fc":"rgba(255,255,255,.4)"};padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">${brokerUnlocked?"🔓 Lock":"🔐 Show Broker"}</button>`;
+
+  document.getElementById("dashPage").innerHTML=`
+  <div class="dash-page">
+    ${lockBtn}
+    <div style="clear:both;height:8px;"></div>
+
+    <!-- Today section -->
+    <div class="today-banner">
+      <div class="today-label">📅 ${today.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</div>
+      <div class="today-grid">
+        <div>
+          <div class="today-section-title" style="color:#fde047;">🛫 Pickups (${puToday.length})</div>
+          ${puToday.length?puToday.map(l=>todayCard(l,"pu")).join(""):`<div class="today-empty">None today</div>`}
+        </div>
+        <div>
+          <div class="today-section-title" style="color:#86efac;">🛬 Deliveries (${delToday.length})</div>
+          ${delToday.length?delToday.map(l=>todayCard(l,"del")).join(""):`<div class="today-empty">None today</div>`}
+        </div>
+      </div>
+      ${puTomorrow.length?`
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);">
+        <div class="today-section-title" style="color:#93c5fd;">🕐 Tomorrow Pickups (${puTomorrow.length})</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">${puTomorrow.map(l=>todayCard(l,"tom")).join("")}</div>
+      </div>`:""}
+    </div>
+
+    <!-- Stat cards -->
+    <div class="dash-stats-grid">
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon">📦</div>
+        <div class="dash-stat-label">This Week</div>
+        <div class="dash-stat-value">${wkGroups.length}</div>
+        <div class="dash-stat-sub">${wkLoads.length} loads</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon">💰</div>
+        <div class="dash-stat-label">Gross</div>
+        <div class="dash-stat-value" style="font-size:18px;">$${(gross/1000).toFixed(1)}k</div>
+        <div class="dash-stat-sub">Est. net $${(netEst/1000).toFixed(1)}k</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="color:#fb923c;">🚛</div>
+        <div class="dash-stat-label">Rolling</div>
+        <div class="dash-stat-value" style="color:#fb923c;">${rolling}</div>
+        <div class="dash-stat-sub">in transit</div>
+      </div>
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="color:#34d399;">✅</div>
+        <div class="dash-stat-label">Delivered</div>
+        <div class="dash-stat-value" style="color:#34d399;">${done}</div>
+        <div class="dash-stat-sub">this week</div>
+      </div>
+    </div>
+
+    <!-- Top drivers -->
+    ${topDrivers.length?`
+    <div class="dash-section-title">🏆 Top Drivers — All Time</div>
+    ${topDrivers.map((dr,i)=>`
+    <div class="driver-row">
+      <div class="driver-rank">${i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1)}</div>
+      <div class="driver-name">${dr[0]}</div>
+      <div class="driver-bar-wrap"><div class="driver-bar" style="width:${Math.round(dr[1]/maxG*100)}%;background:${i===0?"#f59e0b":i===1?"#94a3b8":"#3b82f6"};"></div></div>
+      <div class="driver-gross">$${(dr[1]/1000).toFixed(1)}k</div>
+    </div>`).join("")}`:""}
+
+  </div>`;
+}
+
+// ── BOARD ─────────────────────────────────────────────────────────────────────
+function renderWeek(){
+  const week=allWeeks[activeWeek];
+  if(!week){document.getElementById("boardPage").innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No data loaded</div></div>`;return;}
+  const groups=week.groups||[];
+  const locals=week.localDeliveries||[];
+  const xdrops=week.crossdockDrops||[];
+
+  const gross=groups.flatMap(g=>g.loads||[]).reduce((s,l)=>s+(parseFloat(l.rate)||0),0);
+  const rolling=groups.filter(g=>g.groupStatus==="In Transit"||g.groupStatus==="Dispatched").length;
+  const done=groups.filter(g=>g.groupStatus==="Delivered").length;
+
+  const lockBtn=`<button onclick="brokerBtn()" style="margin:10px 14px 0;display:flex;align-items:center;gap:6px;background:${brokerUnlocked?"rgba(56,189,248,.18)":"rgba(255,255,255,.07)"};border:1px solid ${brokerUnlocked?"rgba(56,189,248,.3)":"rgba(255,255,255,.12)"};color:${brokerUnlocked?"#7dd3fc":"rgba(255,255,255,.45)"};padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;">${brokerUnlocked?"🔓 Broker & Load # visible — tap to lock":"🔐 Show Broker & Load #"}</button>`;
+
+  // Buckets
+  const b1=[],b2=[],b4=[],b5=[],bRest=[];
+  groups.forEach(g=>{
+    const loads=g.loads||[];
+    const gS=g.groupStatus||"";
+    const isActive=gS==="In Transit"||gS==="Dispatched";
+    const earliest=loads.reduce((d,l)=>{const pd=parseDate(l.pickup);return pd&&(!d||pd<d)?pd:d;},null);
+    if(isActive&&loads.length>1){b1.push(g);return;}
+    if(isActive){b2.push(g);return;}
+    if(earliest){
+      if(earliest.getTime()===today.getTime()){b4.push(g);return;}
+      if(earliest.getTime()===tomorrow.getTime()){b5.push(g);return;}
+    }
+    bRest.push(g);
+  });
+  const byPick=(a,b)=>Math.min(...(a.loads||[]).map(l=>parseTS(l.pickup)))-Math.min(...(b.loads||[]).map(l=>parseTS(l.pickup)));
+  [b1,b2,b4,b5,bRest].forEach(b=>b.sort(byPick));
+
+  const localToday=locals.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===today.getTime();});
+  const localTomorrow=locals.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===tomorrow.getTime();});
+  const localOther=locals.filter(r=>{const pd=parseDate(r.datetime);return !pd||(pd.getTime()!==today.getTime()&&pd.getTime()!==tomorrow.getTime());});
+  const xdToday=xdrops.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===today.getTime();});
+  const xdTomorrow=xdrops.filter(r=>{const pd=parseDate(r.datetime);return pd&&pd.getTime()===tomorrow.getTime();});
+  const xdOther=xdrops.filter(r=>{const pd=parseDate(r.datetime);return !pd||(pd.getTime()!==today.getTime()&&pd.getTime()!==tomorrow.getTime());});
+
+  let gi=0, html="";
+
+  function secHdr(label,color,count){
+    return`<div class="sec-hdr"><span class="sec-hdr-label" style="color:${color}">${label}</span><span class="sec-hdr-count">${count}</span></div>`;
+  }
+
+  function trailerCard(group){
+    gi++;
+    const loads=group.loads||[];
+    const cc=getCardClass(loads,group.groupStatus||"");
+    const driver=group.groupDriver||"";
+    const truck=group.groupTruck||"";
+    const trailer=group.groupTrailer||"";
+    const gStatus=group.groupStatus||"Pending";
+
+    const loadsHtml=loads.map((l,li)=>{
+      const parts=(l.sr||"").split(" - ");
+      const shipper=parts[0]||"";
+      const receiver=parts[1]||"";
+      const status=l.status||"";
+      let brokerName="", loadNum="";
+      if(l.broker){
+        const bp=l.broker.split("&");
+        brokerName=bp[0]?.trim()||"";
+        loadNum=bp[1]?.trim()||"";
+      }
+      const lDriver=(l.driver||"").trim();
+      return`<div class="load-row">
+        ${loads.length>1?`<div style="margin-bottom:4px"><span class="stop-badge">Stop ${li+1}</span></div>`:""}
+        ${shipper?`<div class="load-from-lbl">From</div><div class="load-city">${shipper}</div>`:""}
+        ${receiver?`<div style="color:rgba(255,255,255,0.25);font-size:11px;margin:3px 0;">↓</div><div class="load-from-lbl">To</div><div class="load-city">${receiver}</div>`:""}
+        <div class="pills">
+          ${l.pickup?`<span class="pill pill-pickup">🛫 ${fmtDate(l.pickup)}</span>`:""}
+          ${l.delivery?`<span class="pill pill-delivery">📦 ${fmtDate(l.delivery)}</span>`:""}
+          ${brokerUnlocked&&brokerName?`<span class="pill" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">${brokerName}</span>`:""}
+          ${brokerUnlocked&&loadNum?`<span class="pill" style="background:rgba(56,189,248,.15);color:#7dd3fc;border:1px solid rgba(56,189,248,.25);">🔢 ${loadNum}</span>`:""}
+          ${!brokerUnlocked&&brokerName?`<button class="broker-lock" onclick="openPin()">🔐 Broker & Load #</button>`:""}
+          ${status?`<span class="pill pill-status"><span class="sdot ${sdotClass(status)}" style="margin-right:4px;"></span>${status}</span>`:""}
+          ${lDriver?`<span class="pill pill-driver">🧑 ${lDriver}</span>`:""}
+        </div>
+      </div>`;
+    }).join("");
+
+    return`<div class="card card-${cc}">
+      <div class="card-hdr">
+        <span class="t-badge">T${gi}</span>
+        <div class="driver-block">
+          ${driver?`<div class="driver-name-hdr">${driver}</div><div class="truck-info">${truck?"🚚 #"+truck:""}${truck&&trailer?" · ":""}${trailer?"🚛 #"+trailer:""}</div>`:`<div class="no-driver">⚠ No driver</div>`}
+        </div>
+        <span class="group-status" style="${gStatusStyle(gStatus)}">${gStatus}</span>
+        <span class="load-count">${loads.length}x</span>
+      </div>
+      <div class="loads-wrap">${loadsHtml}</div>
+    </div>`;
+  }
+
+  function subCard(r,icon,color){
+    const broker=r.broker||"";
+    const loadNum=r.loadNum||"";
+    return`<div class="sub-card">
+      <div class="sub-card-hdr">
+        <span style="font-size:16px;flex-shrink:0">${icon}</span>
+        <span class="sub-card-dest" style="color:${color}">${r.destination||r.location||"—"}</span>
+        <span class="sub-card-date">${fmtDate(r.datetime)}</span>
+      </div>
+      <div class="sub-card-body">
+        ${r.driver?`<span class="pill pill-driver">🧑 ${r.driver}</span>`:""}
+        ${r.trailer?`<span class="pill" style="background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25);">🚛 #${r.trailer}</span>`:""}
+        ${brokerUnlocked&&broker?`<span class="pill" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">${broker}</span>`:""}
+        ${brokerUnlocked&&loadNum?`<span class="pill" style="background:rgba(56,189,248,.15);color:#7dd3fc;border:1px solid rgba(56,189,248,.25);">🔢 ${loadNum}</span>`:""}
+        ${r.status?`<span class="pill pill-status"><span class="sdot ${sdotClass(r.status)}" style="margin-right:4px;"></span>${r.status}</span>`:""}
+      </div>
+    </div>`;
+  }
+
+  if(b1.length){html+=secHdr("🚛 Multi-Stop · In Transit","#fb923c",b1.length);b1.forEach(g=>{html+=trailerCard(g);});}
+  if(b2.length){html+=secHdr("🚚 In Transit","#fb923c",b2.length);b2.forEach(g=>{html+=trailerCard(g);});}
+  if(localToday.length||xdToday.length){
+    html+=secHdr("🏠 Today — Local & Crossdock","#34d399",localToday.length+xdToday.length);
+    localToday.forEach(r=>{html+=subCard(r,"🏠","#34d399");});
+    xdToday.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});
+  }
+  if(b4.length){html+=secHdr("📅 Today — Pickups","#fde047",b4.length);b4.forEach(g=>{html+=trailerCard(g);});}
+  if(b5.length){html+=secHdr("🔶 Tomorrow — Pickups","#f87171",b5.length);b5.forEach(g=>{html+=trailerCard(g);});}
+  if(localTomorrow.length||xdTomorrow.length){
+    html+=secHdr("🏠 Tomorrow — Local & Crossdock","#6ee7b7",localTomorrow.length+xdTomorrow.length);
+    localTomorrow.forEach(r=>{html+=subCard(r,"🏠","#6ee7b7");});
+    xdTomorrow.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});
+  }
+  if(bRest.length){html+=secHdr("📆 Future / Other","#94a3b8",bRest.length);bRest.forEach(g=>{html+=trailerCard(g);});}
+  if(localOther.length||xdOther.length){
+    html+=secHdr("📋 Other Local & Crossdock","#94a3b8",localOther.length+xdOther.length);
+    localOther.forEach(r=>{html+=subCard(r,"🏠","#94a3b8");});
+    xdOther.forEach(r=>{html+=subCard(r,"🔁","#a78bfa");});
+  }
+
+  if(!html)html=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No loads this week</div></div>`;
+
+  document.getElementById("boardPage").innerHTML=`
+    <div class="board-page">
+      ${lockBtn}
+      <div class="totals" style="margin-top:10px;">
+        <div class="total-item"><div class="total-label">Trailers</div><div class="total-value">${groups.length}</div></div>
+        <div class="total-item"><div class="total-label">Loads</div><div class="total-value">${groups.flatMap(g=>g.loads||[]).length}</div></div>
+        <div class="total-item"><div class="total-label" style="color:#fb923c">Rolling</div><div class="total-value" style="color:#fb923c">${rolling}</div></div>
+        <div class="total-item"><div class="total-label" style="color:#34d399">Done</div><div class="total-value" style="color:#34d399">${done}</div></div>
+        <div class="total-item"><div class="total-label" style="color:#93c5fd">Gross</div><div class="total-value" style="color:#93c5fd;font-size:13px">$${(gross/1000).toFixed(1)}k</div></div>
+      </div>
+      ${html}
+    </div>`;
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+showTab("dash");
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
