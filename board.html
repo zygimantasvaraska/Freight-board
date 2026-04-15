@@ -239,6 +239,133 @@ function LoginScreen({onLogin,dispatchers:dispProp}){
   );
 }
 
+class DetailErrorBoundary extends React.Component{
+  constructor(p){super(p);this.state={err:null};}
+  static getDerivedStateFromError(e){return{err:e.message||"Unknown error"};}
+  render(){
+    if(this.state.err)return(
+      <div onClick={()=>this.props.onClose()} style={{position:"fixed",top:0,right:0,bottom:0,width:"380px",background:"#fff",boxShadow:"-4px 0 32px rgba(0,0,0,0.2)",zIndex:3000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px",textAlign:"center"}}>
+        <div style={{fontSize:"48px",marginBottom:"16px"}}>⚠️</div>
+        <div style={{fontWeight:"700",color:"#0f1f3d",marginBottom:"8px"}}>Couldn't open load detail</div>
+        <div style={{fontSize:"12px",color:"#64748b",marginBottom:"20px"}}>{this.state.err}</div>
+        <button onClick={()=>this.props.onClose()} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"8px",padding:"8px 20px",fontWeight:"700",cursor:"pointer"}}>Close</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+function LoadDetailPanel({loadDetailId,weeks,isAdmin,isDispatcher,canSeeBroker,setLoadDetailId,setPhotoModal,setPhotoViewer,goToLoad}){
+  const detWk=weeks.find(w=>w.id===loadDetailId.weekId);
+  const detGrp=detWk&&(detWk.groups||[]).find(g=>(g.loads||[]).some(l=>l.id===loadDetailId.loadId));
+  const detLoad=detGrp&&(detGrp.loads||[]).find(l=>l.id===loadDetailId.loadId);
+  if(!detWk||!detGrp||!detLoad)return null;
+  const sr=parseSR(detLoad.sr||"");
+  const shipper=sr.s||"";
+  const receiver=sr.r||"";
+  const stopNum=(detGrp.loads||[]).findIndex(l=>l.id===loadDetailId.loadId)+1;
+  const totalStops=(detGrp.loads||[]).length;
+  const realPhotos=(detLoad.photos||[]).filter(p=>p&&p.length>10&&!p.startsWith("__"));
+  const hasPhotos=realPhotos.length>0;
+  const placeholderCount=(detLoad.photos||[]).filter(p=>p&&p.startsWith("__")).reduce((s,p)=>s+(parseInt(p.replace("__has_",""))||0),0);
+  const showBroker=canSeeBroker(detGrp,detLoad);
+  const brokerText=detLoad.broker?detLoad.broker.split("&")[0]?.trim():"";
+  const loadNum=detLoad.broker&&detLoad.broker.includes("&")?detLoad.broker.split("&")[1]?.trim():"";
+  const infoItems=[
+    showBroker&&brokerText?["Broker",brokerText]:null,
+    showBroker&&loadNum?["Load #",loadNum]:null,
+    detLoad.product?["Product",detLoad.product]:null,
+    detLoad.pallets?["Pallets",detLoad.pallets]:null,
+    detLoad.weight?["Weight",detLoad.weight+" lbs"]:null,
+    (isAdmin&&detLoad.rate)?["Rate","$"+parseFloat(detLoad.rate).toLocaleString()]:null,
+    detLoad.status?["Status",detLoad.status]:null,
+    (detLoad.driver||detGrp.groupDriver)?["Driver",detLoad.driver||detGrp.groupDriver]:null,
+    (detLoad.truck||detGrp.groupTruck)?["Truck","#"+(detLoad.truck||detGrp.groupTruck)]:null,
+    (detLoad.trailer||detGrp.groupTrailer)?["Trailer","#"+(detLoad.trailer||detGrp.groupTrailer)]:null,
+  ].filter(Boolean);
+  return(
+    <div onClick={e=>e.stopPropagation()} style={{position:"fixed",top:0,right:0,bottom:0,width:"380px",background:"#fff",boxShadow:"-4px 0 32px rgba(0,0,0,0.2)",zIndex:3000,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"#0f1f3d",padding:"14px 16px",display:"flex",alignItems:"center",gap:"10px",flexShrink:0}}>
+        <div style={{flex:1}}>
+          <div style={{color:"#fff",fontWeight:"800",fontSize:"13px"}}>📋 Load Detail</div>
+          <div style={{color:"#93c5fd",fontSize:"11px",marginTop:"2px"}}>{detWk.label||""} · Stop {stopNum}/{totalStops}</div>
+        </div>
+        <button onClick={()=>goToLoad(loadDetailId.weekId,loadDetailId.loadId)} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"7px",padding:"6px 12px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>→ Go to Load</button>
+        <button onClick={()=>setLoadDetailId(null)} style={{background:"rgba(255,255,255,0.12)",color:"#fff",border:"none",borderRadius:"7px",width:"30px",height:"30px",cursor:"pointer",fontSize:"18px",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column",gap:"12px"}}>
+        <div style={{background:"#f8fafc",borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0"}}>
+          <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>Route</div>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
+            <span style={{fontSize:"10px",background:"#fffbeb",color:"#92400e",border:"1px solid #fde68a",borderRadius:"4px",padding:"1px 6px",fontWeight:"800",flexShrink:0}}>FROM</span>
+            <span style={{fontSize:"12px",fontWeight:"600",color:"#374151"}}>{shipper||"—"}</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:totalStops>1?"10px":"0"}}>
+            <span style={{fontSize:"10px",background:"#eff6ff",color:"#1e40af",border:"1px solid #bfdbfe",borderRadius:"4px",padding:"1px 6px",fontWeight:"800",flexShrink:0}}>TO</span>
+            <span style={{fontSize:"12px",fontWeight:"700",color:"#2563eb"}}>{receiver||"—"}</span>
+          </div>
+          {totalStops>1&&(<div style={{borderTop:"1px solid #e2e8f0",paddingTop:"10px"}}>
+            <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",marginBottom:"6px",textTransform:"uppercase",letterSpacing:".06em"}}>All stops on this trailer:</div>
+            {(detGrp.loads||[]).map((l,i)=>{
+              const r2=parseSR(l.sr||"");
+              const isThis=l.id===loadDetailId.loadId;
+              return(
+                <div key={l.id} onClick={()=>setLoadDetailId({loadId:l.id,weekId:loadDetailId.weekId})} style={{display:"flex",alignItems:"center",gap:"6px",padding:"5px 7px",borderRadius:"6px",cursor:"pointer",background:isThis?"#eff6ff":"transparent",marginBottom:"3px",border:isThis?"1px solid #bfdbfe":"1px solid transparent"}}>
+                  <span style={{fontSize:"10px",fontWeight:"800",background:isThis?"#2563eb":"#f1f5f9",color:isThis?"#fff":"#64748b",borderRadius:"4px",padding:"1px 6px",flexShrink:0}}>S{i+1}</span>
+                  <span style={{fontSize:"11px",color:isThis?"#1e40af":"#374151",fontWeight:isThis?"700":"400",flex:1}}>{r2.r||"—"}</span>
+                  {isThis&&<span style={{fontSize:"9px",color:"#93c5fd"}}>◀</span>}
+                </div>
+              );
+            })}
+          </div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+          <div style={{background:"#fffbeb",borderRadius:"10px",padding:"10px",border:"1px solid #fde68a"}}>
+            <div style={{fontSize:"9px",fontWeight:"700",color:"#92400e",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>🛫 Pickup</div>
+            <div style={{fontSize:"12px",fontWeight:"700",color:"#92400e"}}>{detLoad.pickup||"—"}</div>
+          </div>
+          <div style={{background:"#f0fdf4",borderRadius:"10px",padding:"10px",border:"1px solid #86efac"}}>
+            <div style={{fontSize:"9px",fontWeight:"700",color:"#166534",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>🛬 Delivery</div>
+            <div style={{fontSize:"12px",fontWeight:"700",color:"#166534"}}>{detLoad.delivery||"—"}</div>
+          </div>
+        </div>
+        {infoItems.length>0&&(<div style={{background:"#f8fafc",borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0"}}>
+          <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>Load Info</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}}>
+            {infoItems.map(([k,v])=>(
+              <div key={k} style={{padding:"6px 8px",background:"#fff",borderRadius:"6px",border:"1px solid #e2e8f0"}}>
+                <div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",letterSpacing:".04em"}}>{k}</div>
+                <div style={{fontSize:"11px",fontWeight:"700",color:"#0f1f3d",marginTop:"2px",wordBreak:"break-word"}}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>)}
+        {!showBroker&&(detLoad.broker||loadNum)&&(<div style={{background:"#f8fafc",borderRadius:"10px",padding:"10px 12px",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:"8px"}}>
+          <span style={{fontSize:"14px"}}>🔒</span>
+          <div>
+            <div style={{fontSize:"11px",fontWeight:"700",color:"#64748b"}}>Broker & Load # — Hidden</div>
+            <div style={{fontSize:"10px",color:"#94a3b8",marginTop:"1px"}}>No permission to view this load's broker info</div>
+          </div>
+        </div>)}
+        {(detLoad.notes||detGrp.groupNotes)&&(<div style={{background:"#fefce8",borderRadius:"10px",padding:"12px",border:"1px solid #fde68a"}}>
+          <div style={{fontSize:"9px",fontWeight:"700",color:"#92400e",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"6px"}}>📝 Notes</div>
+          {detLoad.notes&&<div style={{fontSize:"12px",color:"#78350f",lineHeight:"1.5",marginBottom:detGrp.groupNotes?"6px":"0"}}>{detLoad.notes}</div>}
+          {detGrp.groupNotes&&<div style={{fontSize:"12px",color:"#78350f",lineHeight:"1.5",fontStyle:"italic"}}>Trailer: {detGrp.groupNotes}</div>}
+        </div>)}
+        <div style={{borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
+          <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>📷 Photos{hasPhotos?" ("+realPhotos.length+")":placeholderCount>0?" ("+placeholderCount+" saved)":""}</div>
+          {hasPhotos?(<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"6px"}}>
+            {realPhotos.map((p,i)=>(<img key={i} src={p} onClick={()=>setPhotoViewer({photos:realPhotos,idx:i})} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:"6px",cursor:"pointer",border:"1px solid #e2e8f0"}}/>))}
+          </div>):(<div style={{textAlign:"center",color:"#94a3b8",fontSize:"11px",padding:"10px"}}>
+            {placeholderCount>0?placeholderCount+" photo(s) — reload to view":"No photos yet"}
+            {isAdmin&&<><br/><button onClick={()=>{setLoadDetailId(null);setPhotoModal({...detLoad,groupId:detGrp.id});}} style={{marginTop:"6px",background:"#2563eb",color:"#fff",border:"none",borderRadius:"6px",padding:"5px 12px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>+ Add Photos</button></>}
+          </div>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App(){
   const[appMode,setAppMode]=useState(null);
   const[weeks,setWeeks]=useState([]);
@@ -613,109 +740,17 @@ function App(){
   <div style={{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",padding:"12px"}} onClick={()=>setShowHdrMenu(false)}>
 
     {/* ── LOAD DETAIL PANEL ── */}
-    {loadDetailId&&(()=>{
-      const detWk=weeks.find(w=>w.id===loadDetailId.weekId);
-      const detGrp=detWk&&(detWk.groups||[]).find(g=>(g.loads||[]).some(l=>l.id===loadDetailId.loadId));
-      const detLoad=detGrp&&(detGrp.loads||[]).find(l=>l.id===loadDetailId.loadId);
-      if(!detLoad||!detGrp||!detGrp.loads)return null;
-      const{s:shipper,r:receiver}=parseSR(detLoad.sr||"");
-      const stopNum=(detGrp.loads||[]).findIndex(l=>l.id===loadDetailId.loadId)+1;
-      const totalStops=(detGrp.loads||[]).length;
-      const realPhotos=(detLoad.photos||[]).filter(p=>p&&p.length>10&&!p.startsWith("__"));
-      const hasPhotos=realPhotos.length>0;
-      const placeholderPhotos=(detLoad.photos||[]).filter(p=>p&&p.startsWith("__"));
-      return(
-        <div onClick={e=>e.stopPropagation()} style={{position:"fixed",top:0,right:0,bottom:0,width:"380px",background:"#fff",boxShadow:"-4px 0 32px rgba(0,0,0,0.2)",zIndex:3000,display:"flex",flexDirection:"column"}}>
-          <div style={{background:"#0f1f3d",padding:"14px 16px",display:"flex",alignItems:"center",gap:"10px",flexShrink:0}}>
-            <div style={{flex:1}}>
-              <div style={{color:"#fff",fontWeight:"800",fontSize:"13px"}}>📋 Load Detail</div>
-              <div style={{color:"#93c5fd",fontSize:"11px",marginTop:"2px"}}>{detWk?.label||""} · Stop {stopNum}/{totalStops}</div>
-            </div>
-            <button onClick={()=>goToLoad(loadDetailId.weekId,loadDetailId.loadId)} style={{background:"#2563eb",color:"#fff",border:"none",borderRadius:"7px",padding:"6px 12px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>→ Go to Load</button>
-            <button onClick={()=>setLoadDetailId(null)} style={{background:"rgba(255,255,255,0.12)",color:"#fff",border:"none",borderRadius:"7px",width:"30px",height:"30px",cursor:"pointer",fontSize:"18px",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-          </div>
-          <div style={{flex:1,overflowY:"auto",padding:"14px",display:"flex",flexDirection:"column",gap:"12px"}}>
-            <div style={{background:"#f8fafc",borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>Route</div>
-              <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
-                <span style={{fontSize:"10px",background:"#fffbeb",color:"#92400e",border:"1px solid #fde68a",borderRadius:"4px",padding:"1px 6px",fontWeight:"800",flexShrink:0}}>FROM</span>
-                <span style={{fontSize:"12px",fontWeight:"600",color:"#374151"}}>{shipper||"—"}</span>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:totalStops>1?"10px":"0"}}>
-                <span style={{fontSize:"10px",background:"#eff6ff",color:"#1e40af",border:"1px solid #bfdbfe",borderRadius:"4px",padding:"1px 6px",fontWeight:"800",flexShrink:0}}>TO</span>
-                <span style={{fontSize:"12px",fontWeight:"700",color:"#2563eb"}}>{receiver||"—"}</span>
-              </div>
-              {totalStops>1&&(<div style={{borderTop:"1px solid #e2e8f0",paddingTop:"10px"}}>
-                <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",marginBottom:"6px",textTransform:"uppercase",letterSpacing:".06em"}}>All stops on this trailer:</div>
-                {(detGrp.loads||[]).map((l,i)=>{const{r:rcv}=parseSR(l.sr||"");const isThis=l.id===loadDetailId.loadId;return(<div key={l.id} onClick={()=>setLoadDetailId({loadId:l.id,weekId:loadDetailId.weekId})} style={{display:"flex",alignItems:"center",gap:"6px",padding:"5px 7px",borderRadius:"6px",cursor:"pointer",background:isThis?"#eff6ff":"transparent",marginBottom:"3px",border:isThis?"1px solid #bfdbfe":"1px solid transparent"}}>
-                  <span style={{fontSize:"10px",fontWeight:"800",background:isThis?"#2563eb":"#f1f5f9",color:isThis?"#fff":"#64748b",borderRadius:"4px",padding:"1px 6px",flexShrink:0}}>S{i+1}</span>
-                  <span style={{fontSize:"11px",color:isThis?"#1e40af":"#374151",fontWeight:isThis?"700":"400",flex:1}}>{rcv||"—"}</span>
-                  {isThis&&<span style={{fontSize:"9px",color:"#93c5fd"}}>◀</span>}
-                </div>);})}
-              </div>)}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
-              <div style={{background:"#fffbeb",borderRadius:"10px",padding:"10px",border:"1px solid #fde68a"}}>
-                <div style={{fontSize:"9px",fontWeight:"700",color:"#92400e",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>🛫 Pickup</div>
-                <div style={{fontSize:"12px",fontWeight:"700",color:"#92400e"}}>{detLoad.pickup||"—"}</div>
-              </div>
-              <div style={{background:"#f0fdf4",borderRadius:"10px",padding:"10px",border:"1px solid #86efac"}}>
-                <div style={{fontSize:"9px",fontWeight:"700",color:"#166534",textTransform:"uppercase",letterSpacing:".06em",marginBottom:"4px"}}>🛬 Delivery</div>
-                <div style={{fontSize:"12px",fontWeight:"700",color:"#166534"}}>{detLoad.delivery||"—"}</div>
-              </div>
-            </div>
-            <div style={{background:"#f8fafc",borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>Load Info</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}}>
-                {(()=>{
-                    const showBrokerInPanel=canSeeBroker(detGrp,detLoad);
-                    return[
-                      showBrokerInPanel?["Broker",detLoad.broker]:null,
-                      ["Product",detLoad.product],
-                      ["Pallets",detLoad.pallets],
-                      ["Weight",detLoad.weight?detLoad.weight+" lbs":""],
-                      isAdmin?["Rate",detLoad.rate?"$"+parseFloat(detLoad.rate).toLocaleString():""]:(isDispatcher&&(detGrp.permissions||{}).canSeeRates!==false)?["Rate",detLoad.rate?"$"+parseFloat(detLoad.rate).toLocaleString():""]  :null,
-                      ["Status",detLoad.status],
-                      ["Driver",detLoad.driver||detGrp.groupDriver],
-                      ["Truck",detLoad.truck||detGrp.groupTruck],
-                      ["Trailer #",detLoad.trailer||detGrp.groupTrailer],
-                    ].filter(item=>item&&item[1]&&item[1].toString().trim()).map(([k,v])=>(
-                  <div key={k} style={{padding:"6px 8px",background:"#fff",borderRadius:"6px",border:"1px solid #e2e8f0"}}>
-                    <div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",letterSpacing:".04em"}}>{k}</div>
-                    <div style={{fontSize:"11px",fontWeight:"700",color:"#0f1f3d",marginTop:"2px",wordBreak:"break-word"}}>{v}</div>
-                  </div>
-                ));
-                  })()} 
-              </div>
-            </div>
-            {isDispatcher&&!canSeeBroker(detGrp,detLoad)&&detLoad.broker&&(
-              <div style={{background:"#f8fafc",borderRadius:"10px",padding:"10px 12px",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:"8px"}}>
-                <span style={{fontSize:"14px"}}>🔒</span>
-                <div>
-                  <div style={{fontSize:"11px",fontWeight:"700",color:"#64748b"}}>Broker & Load # — Hidden</div>
-                  <div style={{fontSize:"10px",color:"#94a3b8",marginTop:"1px"}}>You don't have permission to view this load's broker information</div>
-                </div>
-              </div>
-            )}
-            {(detLoad.notes||detGrp.groupNotes)&&(<div style={{background:"#fefce8",borderRadius:"10px",padding:"12px",border:"1px solid #fde68a"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#92400e",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"6px"}}>📝 Notes</div>
-              {detLoad.notes&&<div style={{fontSize:"12px",color:"#78350f",lineHeight:"1.5",marginBottom:detGrp.groupNotes?"6px":"0"}}>{detLoad.notes}</div>}
-              {detGrp.groupNotes&&<div style={{fontSize:"12px",color:"#78350f",lineHeight:"1.5",fontStyle:"italic"}}>Trailer note: {detGrp.groupNotes}</div>}
-            </div>)}
-            <div style={{borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
-              <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>📷 Photos {hasPhotos?"("+detLoad.photos.filter(p=>p&&!p.startsWith("__")).length+")":""}</div>
-              {hasPhotos?(<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"6px"}}>
-                {realPhotos.map((p,i)=>(<img key={i} src={p} onClick={()=>setPhotoViewer({photos:realPhotos,idx:i})} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:"6px",cursor:"pointer",border:"1px solid #e2e8f0"}}/>))}
-              </div>):(<div style={{textAlign:"center",color:"#94a3b8",fontSize:"11px",padding:"10px"}}>
-                {placeholderPhotos.length>0?`${placeholderPhotos[0].replace('__has_','')} photo(s) saved — reload board to view`:"No photos yet"}
-                {isAdmin&&<><br/><button onClick={()=>{setLoadDetailId(null);setPhotoModal({...detLoad,groupId:detGrp.id});}} style={{marginTop:"6px",background:"#2563eb",color:"#fff",border:"none",borderRadius:"6px",padding:"5px 12px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>+ Add Photos</button></>}
-              </div>)}
-            </div>
-          </div>
-        </div>
-      );
-    })()}
-
+    {loadDetailId&&<DetailErrorBoundary onClose={()=>setLoadDetailId(null)}><LoadDetailPanel
+      loadDetailId={loadDetailId}
+      weeks={weeks}
+      isAdmin={isAdmin}
+      isDispatcher={isDispatcher}
+      canSeeBroker={canSeeBroker}
+      setLoadDetailId={setLoadDetailId}
+      setPhotoModal={setPhotoModal}
+      setPhotoViewer={setPhotoViewer}
+      goToLoad={goToLoad}
+    /></DetailErrorBoundary>}
     {/* PHOTO MODAL */}
     {photoModal&&(<div className="modal-bg" onClick={()=>setPhotoModal(null)}><div className="modal" style={{maxWidth:"600px",width:"95%"}} onClick={e=>e.stopPropagation()}>
       <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"16px"}}>
