@@ -265,9 +265,10 @@ function LoadDetailPanel({loadDetailId,weeks,isAdmin,isDispatcher,canSeeBroker,s
   const receiver=sr.r||"";
   const stopNum=(detGrp.loads||[]).findIndex(l=>l.id===loadDetailId.loadId)+1;
   const totalStops=(detGrp.loads||[]).length;
-  const realPhotos=(detLoad.photos||[]).filter(p=>p&&p.length>10&&!p.startsWith("__"));
+  // Photos are stored as {data, name} objects OR as plain strings (legacy/placeholder)
+  const realPhotos=(detLoad.photos||[]).filter(p=>p&&typeof p==="object"&&p.data);
   const hasPhotos=realPhotos.length>0;
-  const placeholderCount=(detLoad.photos||[]).filter(p=>p&&p.startsWith("__")).reduce((s,p)=>s+(parseInt(p.replace("__has_",""))||0),0);
+  const placeholderCount=(detLoad.photos||[]).filter(p=>p&&typeof p==="string"&&p.startsWith("__")).reduce((s,p)=>s+(parseInt(p.replace("__has_",""))||0),0);
   const showBroker=canSeeBroker(detGrp,detLoad);
   const brokerText=detLoad.broker?detLoad.broker.split("&")[0]?.trim():"";
   const loadNum=detLoad.broker&&detLoad.broker.includes("&")?detLoad.broker.split("&")[1]?.trim():"";
@@ -355,7 +356,7 @@ function LoadDetailPanel({loadDetailId,weeks,isAdmin,isDispatcher,canSeeBroker,s
         <div style={{borderRadius:"10px",padding:"12px",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
           <div style={{fontSize:"9px",fontWeight:"700",color:"#64748b",letterSpacing:".06em",textTransform:"uppercase",marginBottom:"8px"}}>📷 Photos{hasPhotos?" ("+realPhotos.length+")":placeholderCount>0?" ("+placeholderCount+" saved)":""}</div>
           {hasPhotos?(<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"6px"}}>
-            {realPhotos.map((p,i)=>(<img key={i} src={p} onClick={()=>setPhotoViewer({photos:realPhotos,idx:i})} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:"6px",cursor:"pointer",border:"1px solid #e2e8f0"}}/>))}
+            {realPhotos.map((p,i)=>(<img key={i} src={p.data||p} alt={p.name||""} onClick={()=>setPhotoViewer({photos:realPhotos.map(ph=>ph.data||ph),idx:i})} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:"6px",cursor:"pointer",border:"1px solid #e2e8f0"}}/>))}
           </div>):(<div style={{textAlign:"center",color:"#94a3b8",fontSize:"11px",padding:"10px"}}>
             {placeholderCount>0?placeholderCount+" photo(s) — reload to view":"No photos yet"}
             {isAdmin&&<><br/><button onClick={()=>{setLoadDetailId(null);setPhotoModal({...detLoad,groupId:detGrp.id});}} style={{marginTop:"6px",background:"#2563eb",color:"#fff",border:"none",borderRadius:"6px",padding:"5px 12px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>+ Add Photos</button></>}
@@ -623,7 +624,7 @@ function App(){
         const wNoPhotos=w.map(function(wk){
           return {...wk,groups:(wk.groups||[]).map(function(g){
             return {...g,loads:(g.loads||[]).map(function(l){
-              const realPhotos=(l.photos||[]).filter(function(p){return p&&!p.startsWith("__");});
+              const realPhotos=(l.photos||[]).filter(function(p){return p&&(typeof p==="object"?!!p.data:(!p.startsWith("__")));});
               if(realPhotos.length>0)photoStore[l.id]=realPhotos;
               return {...l,photos:realPhotos.length>0?["__has_"+realPhotos.length]:[]};
             })};
