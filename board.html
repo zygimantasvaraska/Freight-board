@@ -239,13 +239,19 @@ function LoginScreen({onLogin,dispatchers:dispProp}){
   const inputRef=useRef(null);
   useEffect(()=>{if(mode)setTimeout(()=>inputRef.current?.focus(),100);},[mode]);
   const attempt=()=>{
-    if(pin===adminPin){onLogin("admin",null);return;}
-    if(pin===viewerPin){onLogin("viewer",null);return;}
-    const disp=dispatchers.find(d=>d.pin&&d.pin===pin);
+    const pinStr=String(pin).trim();
+    if(pinStr===String(adminPin).trim()){onLogin("admin",null);return;}
+    if(pinStr===String(viewerPin).trim()){onLogin("viewer",null);return;}
+    // Re-read dispatchers from localStorage at attempt time (in case Sheets hasn't synced yet)
+    let freshDispatchers=dispatchers;
+    try{
+      const stored=JSON.parse(localStorage.getItem(DISPATCHERS_KEY)||"[]");
+      if(stored.length>0)freshDispatchers=stored;
+    }catch(e){}
+    const disp=freshDispatchers.find(d=>d.pin&&String(d.pin).trim()===pinStr);
     if(disp){onLogin("dispatcher",disp);return;}
-    // If dispatchers still empty (loading), give a helpful message
-    if(dispatchers.length===0){setErr("Still loading — please wait a moment and try again");setPin("");}
-    else{setErr("Incorrect PIN");setPin("");}
+    if(freshDispatchers.length===0){setErr("Still loading — please wait a moment and try again");setPin("");}
+    else{setErr("Incorrect PIN — try again");setPin("");}
   };
   return(
     <div className="login-wrap">
