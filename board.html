@@ -172,47 +172,58 @@ function calcGroup(g){
   return{...g,calcTripMi:tm,autoTripMi:bestAutoMi||null,rcvrs,rpm,gross,loc,loads:sdFinal};
 }
 async function sheetsLoad(){const r=await fetch(SHEETS_URL,{redirect:"follow"});if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}
-async async function compressPhotoForCloud(photo){
+async function compressPhotoForCloud(photo){
   // Compress to max 400px / 55% quality for cloud storage (~15-30KB per photo)
-  if(!photo||!photo.data)return photo;
-  return new Promise(res=>{
-    const img=new Image();
-    img.onload=()=>{
-      const MAX=400;
-      let w=img.width,h=img.height;
+  if(!photo||!photo.data)return Promise.resolve(photo);
+  return new Promise(function(res){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=400;
+      var w=img.width,h=img.height;
       if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
       if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
-      const canvas=document.createElement("canvas");
+      var canvas=document.createElement("canvas");
       canvas.width=w;canvas.height=h;
       canvas.getContext("2d").drawImage(img,0,0,w,h);
-      res({...photo,data:canvas.toDataURL("image/jpeg",0.55)});
+      res({name:photo.name,ts:photo.ts,data:canvas.toDataURL("image/jpeg",0.55)});
     };
-    img.onerror=()=>res(photo);
+    img.onerror=function(){res(photo);};
     img.src=photo.data;
   });
 }
 
-async function sheetsSave(data){
-  const savedAt=Date.now();
-  // Compress photos for cloud sync (small enough to fit in Sheets payload)
-  let weeksWithPhotos=data.weeks||[];
-  try{
-    weeksWithPhotos=await Promise.all((data.weeks||[]).map(async w=>({
-      ...w,
-      groups:await Promise.all((w.groups||[]).map(async g=>({
-        ...g,
-        loads:await Promise.all((g.loads||[]).map(async l=>{
-          if(!l.photos||!l.photos.length)return l;
-          const realPhotos=l.photos.filter(p=>p&&typeof p==="object"&&p.data);
-          if(!realPhotos.length)return l;
-          const compressed=await Promise.all(realPhotos.map(p=>compressPhotoForCloud(p)));
-          return {...l,photos:compressed};
-        }))
-      })))
-    })));
-  }catch(e){weeksWithPhotos=data.weeks||[];}
-  const payload={...data,weeks:weeksWithPhotos,savedAt};
-  await fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({data:payload})});
+function sheetsSave(data){
+  var savedAt=Date.now();
+  // Compress photos for cloud sync, then send to Sheets
+  var weeks=data.weeks||[];
+  // Collect all loads with real photos
+  var photoPromises=[];
+  var loadRefs=[];
+  weeks.forEach(function(w,wi){
+    (w.groups||[]).forEach(function(g,gi){
+      (g.loads||[]).forEach(function(l,li){
+        var realPhotos=(l.photos||[]).filter(function(p){return p&&typeof p==="object"&&p.data;});
+        if(realPhotos.length){
+          photoPromises.push(Promise.all(realPhotos.map(function(p){return compressPhotoForCloud(p);})));
+          loadRefs.push({wi:wi,gi:gi,li:li});
+        }
+      });
+    });
+  });
+  Promise.all(photoPromises).then(function(results){
+    // Deep clone weeks and inject compressed photos
+    var weeksCopy=JSON.parse(JSON.stringify(weeks));
+    results.forEach(function(compressed,idx){
+      var ref=loadRefs[idx];
+      weeksCopy[ref.wi].groups[ref.gi].loads[ref.li].photos=compressed;
+    });
+    var payload=Object.assign({},data,{weeks:weeksCopy,savedAt:savedAt});
+    fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({data:payload})});
+  }).catch(function(){
+    // If compression fails, send without photos
+    var payload=Object.assign({},data,{savedAt:savedAt});
+    fetch(SHEETS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({data:payload})});
+  });
 }
 </script>
 
