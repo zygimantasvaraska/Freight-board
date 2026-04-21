@@ -89,15 +89,10 @@ const XDOCK_ADDRESSES=[{city:"Jacksonville, FL",addr:"680 Edgewood Ave N Suite B
 
 
 
-// SHEETS_URL: loaded from localStorage (set in setup wizard or Menu → Connection Setup)
-// For existing users upgrading from older versions, falls back to the previously hardcoded URL
-var SHEETS_URL=localStorage.getItem("fcbv2_sheetsUrl")||"";
+// SHEETS_URL: Google Apps Script webhook. Not a secret — token is the secret.
+// Override via localStorage "fcbv2_sheetsUrl" if you use a different deployment.
+var SHEETS_URL=localStorage.getItem("fcbv2_sheetsUrl")||"https://script.google.com/macros/s/AKfycbwvzKkQR2jRUL6-pPHET8JxUbPgVgGdRMs3BjmKyCrsNgHqo3GhUTUUw-qky61e-FQfqQ/exec";
 var SHEETS_TOKEN=localStorage.getItem("fcbv2_sheetsToken")||"";
-// If no URL configured yet, pre-populate with known URL so existing users don't lose data
-if(!SHEETS_URL){
-  var _knownUrl=atob("aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcz9BQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE");
-  // Note: store the actual URL via Menu → Connection Setup
-}
 const ADMIN_PIN_KEY="fcbv2_adminPin";
 const VIEWER_PIN_KEY="fcbv2_viewerPin";
 const DISPATCHERS_KEY="fcbv2_dispatchers";
@@ -311,7 +306,11 @@ function LoginScreen({onLogin,dispatchers:dispProp}){
   useEffect(()=>{if(mode)setTimeout(()=>inputRef.current?.focus(),100);},[mode]);
   const attempt=()=>{
     const pinStr=String(pin).trim();
-    // Admin and viewer PINs stored as plaintext in localStorage (not transmitted)
+    // If no admin PIN in localStorage yet, board hasn't synced — guide user
+    if(!adminPin&&!viewerPin){
+      setErr("Board is loading — please wait a moment and try again");
+      setPin("");return;
+    }
     if(pinStr===String(adminPin).trim()){onLogin("admin",null);return;}
     if(pinStr===String(viewerPin).trim()){onLogin("viewer",null);return;}
     // Re-read dispatchers fresh from localStorage
@@ -660,7 +659,8 @@ function App(){
   const saveDispatchers=(list)=>{
     localStorage.setItem(DISPATCHERS_KEY,JSON.stringify(list));
     setDispatchers(list);
-    saveToSheets({weeks,customDrivers,customTrucks,customTrailers,dispatchers:list});
+    saveToSheets({weeks,customDrivers,customTrucks,customTrailers,dispatchers:list,
+      adminPin:localStorage.getItem(ADMIN_PIN_KEY)||"",viewerPin:localStorage.getItem(VIEWER_PIN_KEY)||""});
   };
   const myDrivers=useMemo(()=>{
     if(!isDispatcher||!currentDispatcher)return new Set();
@@ -710,10 +710,7 @@ function App(){
   const[editingTrailer,setEditingTrailer]=useState(null);
   const[undoStack,setUndoStack]=useState([]);         // F2: undo
   const[showOverwriteWarn,setShowOverwriteWarn]=useState(false);
-  const[showSetupWizard,setShowSetupWizard]=useState(()=>{
-    // Show wizard if admin PIN not set
-    return !localStorage.getItem(ADMIN_PIN_KEY);
-  }); // F1: overwrite warn
+  const[showSetupWizard,setShowSetupWizard]=useState(false); // only opened via Menu → Settings // F1: overwrite warn
   const lastLoadedServerTs=useRef(0);                  // F1: track last server savedAt
   const pendingServerData=useRef(null);                // F1: hold newer server data
   const[activeSection,setActiveSection]=useState("all");
@@ -757,7 +754,7 @@ function App(){
                 return merged.length>0?{...l,photos:merged}:l;
               })};
             })};
-          });setWeeks(localWithPhotos);setLoading(false);setTimeout(()=>sheetsSave({weeks:local.weeks,customDrivers:local.customDrivers||[],customTrucks:local.customTrucks||[],customTrailers:local.customTrailers||[],dispatchers:local.dispatchers||[]}),2000);return;}
+          });setWeeks(localWithPhotos);setLoading(false);setTimeout(()=>sheetsSave({weeks:local.weeks,customDrivers:local.customDrivers||[],customTrucks:local.customTrucks||[],customTrailers:local.customTrailers||[],dispatchers:local.dispatchers||[],adminPin:localStorage.getItem(ADMIN_PIN_KEY)||"",viewerPin:localStorage.getItem(VIEWER_PIN_KEY)||""}),2000);return;}
         // F1: If server is newer than what local last saved, and user has worked since load,
         // warn them (gap > 30s means concurrent edit from another machine)
         if(rawWeeks.length>0&&sheetsSavedAt>lastLoadedServerTs.current+30000&&localSavedAt>0&&localSavedAt>lastLoadedServerTs.current){
@@ -788,6 +785,9 @@ function App(){
           if(data.customTrucks)setCustomTrucks(data.customTrucks);
           if(data.customTrailers)setCustomTrailers(data.customTrailers);
           if(data.dispatchers&&data.dispatchers.length>0){setDispatchers(data.dispatchers);localStorage.setItem(DISPATCHERS_KEY,JSON.stringify(data.dispatchers));}
+          // Restore admin/viewer PINs from Sheets so every computer stays in sync
+          if(data.adminPin&&!localStorage.getItem(ADMIN_PIN_KEY)){localStorage.setItem(ADMIN_PIN_KEY,data.adminPin);}
+          if(data.viewerPin&&!localStorage.getItem(VIEWER_PIN_KEY)){localStorage.setItem(VIEWER_PIN_KEY,data.viewerPin);}
           if(data.truckAssignments&&Object.keys(data.truckAssignments).length>0){setTruckAssignments(data.truckAssignments);}
         } else {
           try{
@@ -942,7 +942,8 @@ function App(){
       }catch(e){}
       // Sheets save — no-cors fetch always throws TypeError on redirect but data still saves
       try{
-        await sheetsSave({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta});
+        await sheetsSave({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta,
+        adminPin:localStorage.getItem(ADMIN_PIN_KEY)||"",viewerPin:localStorage.getItem(VIEWER_PIN_KEY)||""});
         setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),3000);
       }catch(err){
         // TypeError = no-cors redirect quirk — data already in localStorage, treat as saved
