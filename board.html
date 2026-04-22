@@ -219,7 +219,8 @@ function sheetsLoad(role,sessToken){
   var headers={};
   var appToken=localStorage.getItem("fcbv2_sheetsToken")||"";
   if(appToken)headers["X-App-Token"]=appToken;
-  var url=(localStorage.getItem("fcbv2_sheetsUrl")||"");
+  // Re-read from localStorage each time (user may have updated URL in setup wizard)
+  var url=localStorage.getItem("fcbv2_sheetsUrl")||SHEETS_URL;
   if(!url)return Promise.resolve([]);
   // Append role as query param so Apps Script can filter sensitive fields
   var sep=url.indexOf("?")>=0?"&":"?";
@@ -277,18 +278,19 @@ function sheetsSave(data){
       weeksCopy[ref.wi].groups[ref.gi].loads[ref.li].photos=compressed;
     });
     var payload=Object.assign({},data,{weeks:weeksCopy,savedAt:savedAt});
-    var saveUrl=localStorage.getItem("fcbv2_sheetsUrl")||"";
     var saveToken=localStorage.getItem("fcbv2_sheetsToken")||"";
     var saveHeaders={"Content-Type":"text/plain;charset=utf-8"};
     if(saveToken)saveHeaders["X-App-Token"]=saveToken;
-    if(saveUrl)fetch(saveUrl,{method:"POST",mode:"no-cors",headers:saveHeaders,body:JSON.stringify({data:payload})});
+    // Use SHEETS_URL which has the hardcoded fallback
+    var _url=localStorage.getItem("fcbv2_sheetsUrl")||SHEETS_URL;
+    if(_url)fetch(_url,{method:"POST",mode:"no-cors",headers:saveHeaders,body:JSON.stringify({data:payload})});
   }).catch(function(){
-    var saveUrl=localStorage.getItem("fcbv2_sheetsUrl")||"";
     var saveToken=localStorage.getItem("fcbv2_sheetsToken")||"";
     var saveHeaders={"Content-Type":"text/plain;charset=utf-8"};
     if(saveToken)saveHeaders["X-App-Token"]=saveToken;
     var payload=Object.assign({},data,{savedAt:savedAt});
-    if(saveUrl)fetch(saveUrl,{method:"POST",mode:"no-cors",headers:saveHeaders,body:JSON.stringify({data:payload})});
+    var _url=localStorage.getItem("fcbv2_sheetsUrl")||SHEETS_URL;
+    if(_url)fetch(_url,{method:"POST",mode:"no-cors",headers:saveHeaders,body:JSON.stringify({data:payload})});
   });
 }
 </script>
@@ -744,7 +746,11 @@ function App(){
         const sheetsSavedAt=Array.isArray(data)?0:(data.savedAt||0);
         let local={};try{local=JSON.parse(localStorage.getItem("fcbv2_localdata")||"{}");}catch(e){}
         const localSavedAt=local.savedAt||0;
-        const useLocalData=local.weeks&&local.weeks.length>0&&localSavedAt>sheetsSavedAt+5000;
+        // Sheets is the source of truth.
+        // Only use localStorage as fallback when Sheets returns nothing (offline / URL missing).
+        // If Sheets has data, ALWAYS prefer it — prevents stale local from overwriting fresh server data.
+        const sheetsHasData=rawWeeks.length>0;
+        const useLocalData=!sheetsHasData&&local.weeks&&local.weeks.length>0;
         // F1: remember when server data was last seen
         lastLoadedServerTs.current=sheetsSavedAt;
         if(useLocalData){if(local.customDrivers)setCustomDrivers(local.customDrivers);if(local.customTrucks)setCustomTrucks(local.customTrucks);if(local.customTrailers)setCustomTrailers(local.customTrailers);if(local.dispatchers)setDispatchers(local.dispatchers);const storedPhotosL=JSON.parse(localStorage.getItem("fcbv2_photos")||"{}");const localWithPhotos=(local.weeks||[]).map(function(wk){
@@ -759,7 +765,12 @@ function App(){
           });setWeeks(localWithPhotos);setLoading(false);setTimeout(()=>sheetsSave({weeks:local.weeks,customDrivers:local.customDrivers||[],customTrucks:local.customTrucks||[],customTrailers:local.customTrailers||[],dispatchers:local.dispatchers||[],adminPin:localStorage.getItem(ADMIN_PIN_KEY)||"",viewerPin:localStorage.getItem(VIEWER_PIN_KEY)||""}),2000);return;}
         // F1: If server is newer than what local last saved, and user has worked since load,
         // warn them (gap > 30s means concurrent edit from another machine)
-        if(rawWeeks.length>0&&sheetsSavedAt>lastLoadedServerTs.current+30000&&localSavedAt>0&&localSavedAt>lastLoadedServerTs.current){
+        // Overwrite guard: only warn if BOTH conditions true:
+        //   1) Sheets is genuinely newer than what we loaded (concurrent edit from another machine)
+        //   2) User has made local changes since they last loaded (localSavedAt > lastLoadedServerTs)
+        //   3) The gap is > 60s (not just clock drift)
+        //   4) We already loaded once before (lastLoadedServerTs > 0)
+        if(rawWeeks.length>0&&lastLoadedServerTs.current>0&&sheetsSavedAt>lastLoadedServerTs.current+60000&&localSavedAt>lastLoadedServerTs.current+5000){
           pendingServerData.current={rawWeeks,data};
           setShowOverwriteWarn(true);
           setLoading(false);
@@ -1713,6 +1724,23 @@ ${accRows.length>0?`
             </button></>}
 
             <div className="hdr-menu-divider"/>
+            <button className="hdr-menu-item" onClick={()=>{
+              setLoading(true);
+              sheetsLoad(appMode,sessionToken.current).then(data=>{
+                const rw=Array.isArray(data)?data:(data.weeks||[]);
+                if(rw.length>0){
+                  setWeeks(rw);
+                  if(data.customDrivers)setCustomDrivers(data.customDrivers);
+                  if(data.dispatchers&&data.dispatchers.length>0)setDispatchers(data.dispatchers);
+                  if(data.adminPin&&data.adminPin!==localStorage.getItem(ADMIN_PIN_KEY))localStorage.setItem(ADMIN_PIN_KEY,data.adminPin);
+                  if(data.viewerPin&&data.viewerPin!==localStorage.getItem(VIEWER_PIN_KEY))localStorage.setItem(VIEWER_PIN_KEY,data.viewerPin);
+                }
+                setLoading(false);
+                setShowHdrMenu(false);
+              }).catch(()=>setLoading(false));
+            }}>
+              <span style={{fontSize:"15px",width:"18px",textAlign:"center"}}>🔄</span> Force Reload from Sheets
+            </button>
             <button className="hdr-menu-item" style={{color:"#94a3b8"}} onClick={()=>setAppMode(null)}>
               <span style={{fontSize:"15px",width:"18px",textAlign:"center"}}>⏻</span> Exit
             </button>
