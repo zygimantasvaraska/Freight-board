@@ -1953,8 +1953,8 @@ ${accRows.length>0?`
             return(
               <div key={group.id}
                 draggable={!isViewer}
-                onDragStart={()=>{dragGroupIdx.current=gi;}}
-                onDragOver={e=>{e.preventDefault();setDragOverIdx(gi);}}
+                onDragStart={e=>{if(dragLoad.current)return;dragGroupIdx.current=gi;}}
+                onDragOver={e=>{if(dragLoad.current){e.preventDefault();e.stopPropagation();return;}e.preventDefault();setDragOverIdx(gi);}}
                 onDragLeave={()=>setDragOverIdx(null)}
                 onDrop={e=>{
                   // If dragging a LOAD → move it to this group
@@ -2040,11 +2040,11 @@ ${accRows.length>0?`
                       <div
                         id={`load-${load.id}`}
                         draggable={isAdmin}
-                        onDragStart={e=>{if(!isAdmin)return;dragLoad.current={loadId:load.id,fromGroupId:group.id};e.dataTransfer.effectAllowed="move";e.currentTarget.style.opacity="0.5";e.currentTarget.style.outline="2px solid #3b82f6";}}
-                        onDragEnd={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.outline="";e.currentTarget.style.background="";dragLoad.current=null;}}
+                        onDragStart={e=>{if(!isAdmin)return;e.stopPropagation();dragLoad.current={loadId:load.id,fromGroupId:group.id};dragGroupIdx.current=null;e.dataTransfer.effectAllowed="move";e.currentTarget.style.opacity="0.5";e.currentTarget.style.outline="2px solid #3b82f6";}}
+                        onDragEnd={e=>{e.stopPropagation();e.currentTarget.style.opacity="1";e.currentTarget.style.outline="";e.currentTarget.style.background="";dragLoad.current=null;dragGroupIdx.current=null;}}
                         onDragOver={e=>{if(!dragLoad.current)return;e.preventDefault();e.stopPropagation();e.currentTarget.style.background="rgba(37,99,235,0.12)";e.currentTarget.style.boxShadow="inset 0 -3px 0 #3b82f6";}}
                         onDragLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.boxShadow="";}}
-                        onDrop={e=>{e.preventDefault();e.currentTarget.style.background="";e.currentTarget.style.boxShadow="";if(!dragLoad.current||!isAdmin)return;const dl=dragLoad.current;dragLoad.current=null;moveLoad(dl.fromGroupId,group.id,dl.loadId,li);}}
+                        onDrop={e=>{e.preventDefault();e.stopPropagation();e.currentTarget.style.background="";e.currentTarget.style.boxShadow="";if(!dragLoad.current||!isAdmin)return;const dl=dragLoad.current;dragLoad.current=null;moveLoad(dl.fromGroupId,group.id,dl.loadId,li);}}
                         onClick={()=>toggleLoadExpand(load.id)}
                         style={{display:"grid",gridTemplateColumns:"16px minmax(0,1fr) 96px 96px 56px 32px 110px 90px 90px 82px 90px 22px",gap:"18px",padding:"9px 16px",alignItems:"center",fontSize:"12px",background:isExp?"#eff6ff":li%2===0?"#fff":"#f8fafc",borderBottom:"1px solid #e5edf5",cursor:isAdmin?"grab":"pointer",transition:"background .1s",borderLeft:isExp?"3px solid #3b82f6":"3px solid transparent"}}
                       >
