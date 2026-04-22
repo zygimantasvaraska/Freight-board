@@ -1987,7 +1987,7 @@ ${accRows.length>0?`
                 </div>
 
                 {/* ── COLUMN HEADERS ── */}
-                <div style={{display:"grid",gridTemplateColumns:"16px minmax(0,1fr) 80px 80px 60px 36px 108px 88px 88px 88px 22px",gap:"10px",padding:"5px 12px",background:"#f1f5f9",borderBottom:"1px solid #e2e8f0",fontSize:"10px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",alignItems:"center"}}>
+                <div style={{display:"grid",gridTemplateColumns:"16px minmax(0,1fr) 96px 96px 56px 32px 110px 90px 90px 82px 90px 22px",gap:"14px",padding:"5px 14px",background:"#f1f5f9",borderBottom:"1px solid #e2e8f0",fontSize:"10px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",alignItems:"center"}}>
                   <span/>
                   <span onClick={()=>setPlanSort(p=>p==="pickup"?"default":"pickup")} style={{cursor:"pointer",color:planSort==="pickup"?"#2563eb":"#64748b"}}>Route{planSort==="pickup"?" ▲":""}</span>
                   <span onClick={()=>setPlanSort(p=>p==="pickup"?"default":"pickup")} style={{cursor:"pointer",color:planSort==="pickup"?"#2563eb":"#64748b"}}>Pickup</span>
@@ -1997,6 +1997,7 @@ ${accRows.length>0?`
                   <span style={{fontStyle:"italic",color:"#374151"}}>Local Driver</span>
                   <span style={{fontStyle:"italic",color:"#374151"}}>Local Truck</span>
                   <span style={{fontStyle:"italic",color:"#374151"}}>Local Trailer</span>
+                  <span style={{color:"#059669"}}>Rate $</span>
                   <span>Status</span>
                   <span/>
                 </div>
@@ -2024,7 +2025,7 @@ ${accRows.length>0?`
                       <div
                         id={`load-${load.id}`}
                         onClick={()=>toggleLoadExpand(load.id)}
-                        style={{display:"grid",gridTemplateColumns:"16px minmax(0,1fr) 80px 80px 60px 36px 108px 88px 88px 88px 22px",gap:"10px",padding:"9px 12px",alignItems:"center",fontSize:"12px",background:isExp?"#eff6ff":li%2===0?"#fff":"#f8fafc",borderBottom:"1px solid #e5edf5",cursor:"pointer",transition:"background .1s",borderLeft:isExp?"3px solid #3b82f6":"3px solid transparent"}}
+                        style={{display:"grid",gridTemplateColumns:"16px minmax(0,1fr) 96px 96px 56px 32px 110px 90px 90px 82px 90px 22px",gap:"14px",padding:"9px 14px",alignItems:"center",fontSize:"12px",background:isExp?"#eff6ff":li%2===0?"#fff":"#f8fafc",borderBottom:"1px solid #e5edf5",cursor:"pointer",transition:"background .1s",borderLeft:isExp?"3px solid #3b82f6":"3px solid transparent"}}
                       >
                         {/* Stop dot */}
                         <div style={{width:"18px",height:"18px",borderRadius:"50%",background:isExp?"#bfdbfe":"#e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:"700",color:isExp?"#1e40af":"#64748b",flexShrink:0}}>{load.stop||li+1}</div>
@@ -2134,6 +2135,28 @@ ${accRows.length>0?`
                         </div>
 
                         
+
+                        {/* RATE — editable inline */}
+                        <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
+                          {isAdmin?(
+                            <div style={{display:"flex",alignItems:"center",gap:"2px"}}>
+                              <span style={{fontSize:"10px",color:"#059669",fontWeight:"700"}}>$</span>
+                              <input
+                                key={load.id+"rate"}
+                                defaultValue={load.rate||""}
+                                type="number"
+                                onBlur={e=>{if(e.target.value!==String(load.rate||"")){setLoad(group.id,load.id,"rate",e.target.value);trackField("rate");}}}
+                                onClick={e=>e.stopPropagation()}
+                                placeholder="0"
+                                style={{width:"100%",border:"none",background:"transparent",fontSize:"11px",fontWeight:"700",color:"#059669",padding:0,outline:"none",fontFamily:"inherit"}}
+                              />
+                            </div>
+                          ):(
+                            <span style={{fontSize:"11px",fontWeight:"700",color:(parseFloat(load.rate)||0)>0?"#059669":"#94a3b8"}}>
+                              {(parseFloat(load.rate)||0)>0?"$"+(parseFloat(load.rate)).toLocaleString():"—"}
+                            </span>
+                          )}
+                        </div>
 
                         {/* STATUS badge — click to expand for editing */}
                         <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
@@ -2286,7 +2309,7 @@ ${accRows.length>0?`
                       {/* Load list — show full pickup+delivery datetime */}
                       {(group.loads||[]).map((l,li)=>{
                         const sr=parseSR(l.sr||"");
-                        const lST={"Need to Pickup":{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"},"Dock":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Yard":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Dispatched":{bg:"#dbeafe",c:"#1e40af",bd:"#3b82f6"},"Picked Up":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"In Transit":{bg:"#ffedd5",c:"#9a3412",bd:"#f97316"},"Loaded":{bg:"#dcfce7",c:"#14532d",bd:"#22c55e"},"Delivered":{bg:"#dcfce7",c:"#14532d",bd:"#16a34a"}};
+                        const lST={"Need to Pickup":{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"},"Dock":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Yard":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Loaded":{bg:"#dcfce7",c:"#14532d",bd:"#22c55e"},"Dispatched":{bg:"#dbeafe",c:"#1e40af",bd:"#3b82f6"},"Picked Up":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"In Transit":{bg:"#ffedd5",c:"#9a3412",bd:"#f97316"},"Loaded":{bg:"#dcfce7",c:"#14532d",bd:"#22c55e"},"Delivered":{bg:"#dcfce7",c:"#14532d",bd:"#16a34a"}};
                         const lSp=l.status?lST[l.status]||{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"}:{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"};
                         const isLExp=!!expandedLoads["c_"+l.id];
                         const showBrokerC=canSeeBroker(group,l);
@@ -2303,7 +2326,7 @@ ${accRows.length>0?`
                                 <select value={l.status||""} onChange={e=>{isAdmin&&setLoad(group.id,l.id,"status",e.target.value);trackField("status");}}
                                   style={{position:"absolute",inset:0,opacity:0,cursor:isAdmin?"pointer":"default",width:"100%",height:"100%",zIndex:2}} disabled={!isAdmin}>
                                   <option value="">— Not set —</option>
-                                  {["Dock","Dispatched","Need to Pickup","Yard"].map(s=>(<option key={s}>{s}</option>))}
+                                  {["Dock","Dispatched","Need to Pickup","Loaded","Yard"].map(s=>(<option key={s}>{s}</option>))}
                                 </select>
                                 <span style={{display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"9px",fontWeight:"700",padding:"2px 5px",borderRadius:"4px",background:lSp.bg,color:lSp.c,border:`1.5px solid ${lSp.bd}`,whiteSpace:"nowrap",userSelect:"none",pointerEvents:"none"}}>
                                   <span style={{width:"5px",height:"5px",borderRadius:"50%",background:lSp.bd}}/>{l.status||"Not set"}
