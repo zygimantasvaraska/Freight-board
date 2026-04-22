@@ -346,7 +346,7 @@ function LoginScreen({onLogin,dispatchers:dispProp}){
           <>
             <button className="mode-btn" onClick={()=>setMode("admin")} style={{justifyContent:"center"}}><div className="mode-icon" style={{background:"#1e3a5f"}}>🔐</div><div style={{textAlign:"center"}}><div style={{fontSize:"13px",fontWeight:"700",color:"#0f1f3d"}}>Admin Access</div></div></button>
             <button className="mode-btn" onClick={()=>setMode("dispatcher")} style={{justifyContent:"center"}}><div className="mode-icon" style={{background:"#1e3a5f",fontSize:"15px"}}>🎯</div><div style={{textAlign:"center"}}><div style={{fontSize:"13px",fontWeight:"700",color:"#0f1f3d"}}>Dispatcher</div></div></button>
-            <button className="mode-btn" onClick={()=>setMode("viewer")} style={{justifyContent:"center"}}><div className="mode-icon" style={{background:"#064e3b"}}>👁</div><div style={{textAlign:"center"}}><div style={{fontSize:"13px",fontWeight:"700",color:"#0f1f3d"}}>View Board</div></div></button>
+            <button className="mode-btn" onClick={()=>onLogin("viewer",null)} style={{justifyContent:"center"}}><div className="mode-icon" style={{background:"#064e3b"}}>👁</div><div style={{textAlign:"center"}}><div style={{fontSize:"13px",fontWeight:"700",color:"#0f1f3d"}}>View Dashboard</div></div></button>
           </>
         ):(
           <div className="fade-in">
@@ -599,11 +599,13 @@ function App(){
   const sessionToken=React.useRef(""); // role session token sent to Sheets
   const[weeks,setWeeks]=useState([]);
   const[activeWeek,setActiveWeek]=useState(0);
-  const[activeTab,setActiveTab]=useState(()=>localStorage.getItem("fcbv2_lastTab")||"dashboard");
+  const[_activeTab,_setActiveTab]=useState(()=>localStorage.getItem("fcbv2_lastTab")||"dashboard");
+  const activeTab=appMode==="viewer"?"dashboard":_activeTab;
+  const setActiveTab=(tab)=>{if(appMode==="viewer"&&tab!=="dashboard")return;_setActiveTab(tab);};
   const[boardFilter,setBoardFilter]=useState("all");
   useEffect(()=>{if(activeTab&&appMode)localStorage.setItem("fcbv2_lastTab",activeTab);},[activeTab,appMode]); // all | today | tomorrow | active | pending | done
-  const[dashCurIdx,setDashCurIdx]=useState(-1);
-  const[dashPrevIdx,setDashPrevIdx]=useState(-2);
+  const[dashCurIdx,setDashCurIdx]=useState(0);
+  const[dashPrevIdx,setDashPrevIdx]=useState(1);
   const[driverDateFrom,setDriverDateFrom]=useState("");
   const[driverDateTo,setDriverDateTo]=useState("");
   const[saveStatus,setSaveStatus]=useState("idle");
@@ -658,6 +660,10 @@ function App(){
   };
   const isViewer=appMode==="viewer";
   const isDispatcher=appMode==="dispatcher";
+  // Force viewer to dashboard tab whenever appMode changes
+  React.useEffect(()=>{
+    if(appMode==="viewer"){_setActiveTab("dashboard");}
+  },[appMode]);
   const saveDispatchers=(list)=>{
     localStorage.setItem(DISPATCHERS_KEY,JSON.stringify(list));
     setDispatchers(list);
@@ -751,6 +757,10 @@ function App(){
         // If Sheets has data, ALWAYS prefer it — prevents stale local from overwriting fresh server data.
         const sheetsHasData=rawWeeks.length>0;
         const useLocalData=!sheetsHasData&&local.weeks&&local.weeks.length>0;
+        // Strip stale tripPrice from all loads (old board stored this incorrectly)
+        const stripTripPrice=(weeks)=>weeks.map(w=>({...w,groups:(w.groups||[]).map(g=>({...g,loads:(g.loads||[]).map(l=>{const{tripPrice:_,...rest}=l;return rest;})}))}));
+        if(sheetsHasData)rawWeeks.splice(0,rawWeeks.length,...stripTripPrice(rawWeeks));
+        if(local.weeks)local.weeks=stripTripPrice(local.weeks);
         // F1: remember when server data was last seen
         lastLoadedServerTs.current=sheetsSavedAt;
         if(useLocalData){if(local.customDrivers)setCustomDrivers(local.customDrivers);if(local.customTrucks)setCustomTrucks(local.customTrucks);if(local.customTrailers)setCustomTrailers(local.customTrailers);if(local.dispatchers)setDispatchers(local.dispatchers);const storedPhotosL=JSON.parse(localStorage.getItem("fcbv2_photos")||"{}");const localWithPhotos=(local.weeks||[]).map(function(wk){
@@ -791,8 +801,8 @@ function App(){
             })};
           });
           // F4: Client-side strip for viewer role (defense-in-depth)
-          const finalWeeks=(appMode==="viewer")?rawWithPhotos.map(function(wk){return{...wk,groups:(wk.groups||[]).map(function(g){return{...g,loads:(g.loads||[]).map(function(l){return{...l,broker:"",rate:""};})};})};})
-            :rawWithPhotos;
+          // Viewer sees full data — they are locked to Dashboard only (no tab navigation)
+          const finalWeeks=rawWithPhotos;
           setWeeks(finalWeeks);
           if(data.customDrivers)setCustomDrivers(data.customDrivers);
           if(data.customTrucks)setCustomTrucks(data.customTrucks);
@@ -1105,7 +1115,7 @@ function App(){
     const crossdock=(w.crossdockDrops||[]).length;
     // Extra added = sum of 2nd+ stop rates on multi-stop trailers
     const extraAdded=grps.filter(g=>(g.loads||[]).length>1).reduce((s,g)=>{
-      const rates=(g.loads||[]).map(l=>parseFloat(l.tripPrice||l.rate)||0).sort((a,b)=>b-a);
+      const rates=(g.loads||[]).map(l=>parseFloat(l.rate)||0).sort((a,b)=>b-a);
       return s+rates.slice(1).reduce((x,r)=>x+r,0);
     },0);
     const allMi=grps.reduce((s,g)=>s+(g.calcTripMi?parseFloat(g.calcTripMi):(g.autoTripMi||0)),0);
@@ -1679,7 +1689,7 @@ ${accRows.length>0?`
       <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"nowrap"}}>
 
         {/* Search — always visible */}
-        <button onClick={()=>{setShowSearch(s=>{if(!s)setTimeout(()=>searchRef.current?.focus(),50);return true;});}} style={{background:"#1e3a5f",border:"1px solid #374151",color:"#93c5fd",padding:"5px 13px",borderRadius:"6px",fontSize:"11px",fontWeight:"600",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}>🔍 Search <span style={{opacity:.5,fontSize:"9px"}}>(Ctrl+F)</span></button>
+        <button onClick={()=>{setShowSearch(s=>{if(!s)setTimeout(()=>searchRef.current?.focus(),50);return true;});}} style={{background:"#1e3a5f",border:"1px solid #374151",color:"#93c5fd",padding:"5px 13px",borderRadius:"6px",fontSize:"11px",fontWeight:"600",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px",display:isViewer?"none":"flex"}}>🔍 Search <span style={{opacity:.5,fontSize:"9px"}}>(Ctrl+F)</span></button>
 
         {/* F4: Distance miss indicator for admin */}
         {isAdmin&&Object.keys(distMisses).length>0&&(<button onClick={()=>setShowDistModal(true)} style={{background:"#7c3aed",border:"1px solid #a78bfa",color:"#fff",padding:"5px 11px",borderRadius:"6px",fontSize:"11px",fontWeight:"700",cursor:"pointer",display:"flex",alignItems:"center",gap:"5px"}}>
@@ -1705,8 +1715,9 @@ ${accRows.length>0?`
 
             {/* Navigation */}
             <div className="hdr-menu-section">Navigation</div>
+            {isViewer&&<div style={{fontSize:"11px",color:"#94a3b8",padding:"4px 12px",fontStyle:"italic"}}>Dashboard view only</div>}
             
-            {(isAdmin||isDispatcher)&&<button className={"hdr-menu-item"+(activeTab==="dashboard"?" active":"")} style={{color:activeTab==="dashboard"?"#0891b2":"#374151",background:activeTab==="dashboard"?"#ecfeff":"transparent"}} onClick={()=>{setActiveTab("dashboard");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center"}}>📊</span> Dashboard</button>}
+            <button className={"hdr-menu-item"+(activeTab==="dashboard"?" active":"")} style={{color:activeTab==="dashboard"?"#0891b2":"#374151",background:activeTab==="dashboard"?"#ecfeff":"transparent"}} onClick={()=>{setActiveTab("dashboard");setDashCurIdx(activeWeek);setDashPrevIdx(activeWeek>0?activeWeek-1:activeWeek+1);setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center"}}>📊</span> Dashboard</button>
             {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="weeks"?" active":"")} style={{color:activeTab==="weeks"?"#2563eb":"#374151",background:activeTab==="weeks"?"#eff6ff":"transparent"}} onClick={()=>{setActiveTab("weeks");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>📅</span>Weekly Boards</button>}
             {isAdmin&&<button className={"hdr-menu-item"+(activeTab==="dispatchers"?" active":"")} style={{color:activeTab==="dispatchers"?"#7c3aed":"#374151",background:activeTab==="dispatchers"?"#faf5ff":"transparent"}} onClick={()=>{setActiveTab("dispatchers");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>🎯</span>Dispatchers</button>}
             {(isAdmin||isDispatcher)&&<button className={"hdr-menu-item"+(activeTab==="roster"?" active":"")} style={{color:activeTab==="roster"?"#065f46":"#374151",background:activeTab==="roster"?"#ecfdf5":"transparent"}} onClick={()=>{setActiveTab("roster");setShowHdrMenu(false);}}><span style={{fontSize:"15px",width:"18px",textAlign:"center",flexShrink:0}}>👥</span>Drivers</button>}
@@ -3187,7 +3198,7 @@ ${accRows.length>0?`
               const st=stMatch?stMatch[1]:null;
               if(st)states[st]=(states[st]||0)+1;
             });
-            const extraAdded=grps.filter(g=>(g.loads||[]).length>1).reduce((s,g)=>{const rates=(g.loads||[]).map(l=>parseFloat(l.tripPrice||l.rate)||0).sort((a,b)=>b-a);return s+rates.slice(1).reduce((x,r)=>x+r,0);},0);
+            const extraAdded=grps.filter(g=>(g.loads||[]).length>1).reduce((s,g)=>{const rates=(g.loads||[]).map(l=>parseFloat(l.rate)||0).sort((a,b)=>b-a);return s+rates.slice(1).reduce((x,r)=>x+r,0);},0);
           return{gross,loc,acc,localDel,trailers,loads:loads.length,allMi:Math.round(allMi),netGross,rpm,drivers,states,extraAdded};
           };
           const cur=calcWk(curWk);
