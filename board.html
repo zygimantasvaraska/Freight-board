@@ -2020,9 +2020,9 @@ ${accRows.length>0?`
                   <span onClick={()=>setPlanSort(p=>p==="delivery"?"default":"delivery")} style={{cursor:"pointer",color:planSort==="delivery"?"#2563eb":"#64748b"}}>Delivery{planSort==="delivery"?" ▲":""}</span>
                   <span>Weight</span>
                   <span>Plt</span>
-                  <span style={{fontStyle:"italic",color:"#374151"}}>Local Driver</span>
                   <span style={{fontStyle:"italic",color:"#374151"}}>Local Truck</span>
                   <span style={{fontStyle:"italic",color:"#374151"}}>Local Trailer</span>
+                  <span style={{fontStyle:"italic",color:"#374151"}}>Local Driver</span>
                   <span style={{color:"#059669"}}>Rate $</span>
                   <span>Status</span>
                   <span/>
@@ -2072,43 +2072,24 @@ ${accRows.length>0?`
 
                         {/* Pickup */}
                         <span style={{fontSize:"12px",color:"#475569",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {isAdmin?<input key={load.id+"pu"} defaultValue={load.pickup} onBlur={e=>{if(e.target.value!==load.pickup){setLoad(group.id,load.id,"pickup",e.target.value);trackField("pickup");}}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",fontSize:"12px",color:"#475569",padding:0,outline:"none",fontFamily:"inherit"}} placeholder="Date"/>:load.pickup||"—"}
+                          {isAdmin?<input key={load.id+"pu"} defaultValue={load.pickup} onBlur={e=>{if(e.target.value!==load.pickup){setLoad(group.id,load.id,"pickup",e.target.value);trackField("pickup");}}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"12px",color:"#475569",padding:"2px 4px",outline:"none",fontFamily:"inherit"}} placeholder="Date"/>:load.pickup||"—"}
                         </span>
 
                         {/* Delivery */}
                         <span style={{fontSize:"12px",color:"#475569",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {isAdmin?<input key={load.id+"dl"} defaultValue={load.delivery} onBlur={e=>{if(e.target.value!==load.delivery){setLoad(group.id,load.id,"delivery",e.target.value);trackField("delivery");}}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",fontSize:"12px",color:"#475569",padding:0,outline:"none",fontFamily:"inherit"}} placeholder="Date"/>:load.delivery||"—"}
+                          {isAdmin?<input key={load.id+"dl"} defaultValue={load.delivery} onBlur={e=>{if(e.target.value!==load.delivery){setLoad(group.id,load.id,"delivery",e.target.value);trackField("delivery");}}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"12px",color:"#475569",padding:"2px 4px",outline:"none",fontFamily:"inherit"}} placeholder="Date"/>:load.delivery||"—"}
                         </span>
 
                         {/* Weight */}
                         <span style={{fontSize:"12px",color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {isAdmin?<input key={load.id+"w"} defaultValue={load.weight} onBlur={e=>{if(e.target.value!==load.weight)setLoad(group.id,load.id,"weight",e.target.value);}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",fontSize:"12px",color:"#374151",padding:0,outline:"none",fontFamily:"inherit"}} placeholder="lbs"/>:load.weight||"—"}
+                          {isAdmin?<input key={load.id+"w"} defaultValue={load.weight} onBlur={e=>{if(e.target.value!==load.weight)setLoad(group.id,load.id,"weight",e.target.value);}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"12px",color:"#374151",padding:"2px 4px",outline:"none",fontFamily:"inherit"}} placeholder="lbs"/>:load.weight||"—"}
                         </span>
 
                         {/* Pallets */}
                         <span style={{fontSize:"12px",color:"#374151",textAlign:"center"}}>
-                          {isAdmin?<input key={load.id+"pal"} defaultValue={load.pallets} onBlur={e=>{if(e.target.value!==load.pallets)setLoad(group.id,load.id,"pallets",e.target.value);}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"none",background:"transparent",fontSize:"12px",color:"#374151",padding:0,outline:"none",fontFamily:"inherit",textAlign:"center"}} placeholder="—"/>:load.pallets||"—"}
+                          {isAdmin?<input key={load.id+"pal"} defaultValue={load.pallets} onBlur={e=>{if(e.target.value!==load.pallets)setLoad(group.id,load.id,"pallets",e.target.value);}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"12px",color:"#374151",padding:"2px 4px",outline:"none",fontFamily:"inherit",textAlign:"center"}} placeholder="—"/>:load.pallets||"—"}
                         </span>
 
-                        {/* Local Driver — own column */}
-                        <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
-                          {isAdmin
-                            ?<select value={localDriver} onChange={e=>{
-                              const newDriver=e.target.value;
-                              const curSt=load.status||"";
-                              // Auto-set Dispatched when driver assigned, unless already a further status
-                              const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
-                              const shouldAutoDispatch=newDriver&&!furtherSt.includes(curSt);
-                              const updates={driver:newDriver};
-                              if(shouldAutoDispatch)updates.status="Dispatched";
-                              setLoadFields(group.id,load.id,updates);
-                              trackField("driver");
-                            }} style={{width:"100%",border:"none",background:"transparent",fontSize:"11px",fontStyle:"italic",color:localDriver?"#374151":"#94a3b8",padding:0,outline:"none",fontFamily:"inherit",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              <option value="">— Driver —</option>{[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}
-                            </select>
-                            :<div style={{fontSize:"11px",fontStyle:"italic",color:localDriver?"#374151":"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{localDriver||"—"}</div>
-                          }
-                        </div>
                         {/* Local Truck — own column, searchable via datalist */}
                         <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
                           {isAdmin?(
@@ -2131,7 +2112,7 @@ ${accRows.length>0?`
                                   }
                                 }}
                                 placeholder="Search truck..."
-                                style={{width:"100%",border:"none",borderBottom:"1px solid #e2e8f0",background:"transparent",fontSize:"11px",color:"#374151",padding:"0 1px",outline:"none",fontFamily:"inherit"}}
+                                style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",color:"#374151",padding:"2px 4px",outline:"none",fontFamily:"inherit"}}
                               />
                               <datalist id={`ltruck-${load.id}`}>
                                 {[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}/>))}
@@ -2154,7 +2135,7 @@ ${accRows.length>0?`
                                   if(final!==load.localTrailer){setLoad(group.id,load.id,"localTrailer",final);trackField("localTrailer");}
                                 }}
                                 placeholder="Search trailer..."
-                                style={{width:"100%",border:"none",borderBottom:"1px solid #e2e8f0",background:"transparent",fontSize:"11px",color:"#7c3aed",padding:"0 1px",outline:"none",fontFamily:"inherit"}}
+                                style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",color:"#7c3aed",padding:"2px 4px",outline:"none",fontFamily:"inherit"}}
                               />
                               <datalist id={`ltrailer-${load.id}`}>
                                 {[...TRAILER_NUMBERS,...customTrailers].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}/>))}
@@ -2163,6 +2144,25 @@ ${accRows.length>0?`
                           ):<span style={{fontSize:"11px",color:load.localTrailer?"#7c3aed":"#94a3b8"}}>{load.localTrailer?"T"+load.localTrailer:"—"}</span>}
                         </div>
 
+                        {/* Local Driver — own column */}
+                        <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
+                          {isAdmin
+                            ?<select value={localDriver} onChange={e=>{
+                              const newDriver=e.target.value;
+                              const curSt=load.status||"";
+                              // Auto-set Dispatched when driver assigned, unless already a further status
+                              const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
+                              const shouldAutoDispatch=newDriver&&!furtherSt.includes(curSt);
+                              const updates={driver:newDriver};
+                              if(shouldAutoDispatch)updates.status="Dispatched";
+                              setLoadFields(group.id,load.id,updates);
+                              trackField("driver");
+                            }} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",fontStyle:"italic",color:localDriver?"#374151":"#94a3b8",padding:"2px 4px",outline:"none",fontFamily:"inherit",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                              <option value="">— Driver —</option>{[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}
+                            </select>
+                            :<div style={{fontSize:"11px",fontStyle:"italic",color:localDriver?"#374151":"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{localDriver||"—"}</div>
+                          }
+                        </div>
                         
 
                         {/* RATE — editable inline */}
@@ -2366,8 +2366,13 @@ ${accRows.length>0?`
                             <div onClick={()=>toggleLoadExpand("c_"+l.id)}
                               style={{display:"flex",alignItems:"center",gap:"5px",padding:"6px 0",fontSize:"10px",cursor:"pointer",background:isLExp?"#eff6ff":"transparent"}}>
                               <span style={{width:"13px",height:"13px",borderRadius:"50%",background:isLExp?"#bfdbfe":"#e2e8f0",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:"8px",color:isLExp?"#1e40af":"#64748b",flexShrink:0}}>{li+1}</span>
-                              <span style={{flex:1,fontWeight:"600",color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{sr.r||sr.s||"—"}</span>
-                              {l.delivery&&<span style={{fontSize:"9px",color:"#64748b",whiteSpace:"nowrap",flexShrink:0,background:"#f1f5f9",padding:"1px 5px",borderRadius:"3px"}}>📦 {l.delivery}</span>}
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontWeight:"600",color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:"10px"}}>{sr.r||sr.s||"—"}</div>
+                                <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"2px",alignItems:"center"}}>
+                                  {l.delivery&&<span style={{fontSize:"9px",color:"#64748b",background:"#f1f5f9",padding:"1px 5px",borderRadius:"3px"}}>📦 {l.delivery}</span>}
+                                  {(()=>{const lc=l.manualLocalCharge!==""&&l.manualLocalCharge!=null?parseFloat(l.manualLocalCharge):localCharge(cityMiles(parseSR(l.sr||"").s));return lc!=null&&lc>0?<span style={{fontSize:"9px",color:"#b45309",background:"#fffbeb",padding:"1px 5px",borderRadius:"3px",fontWeight:"600"}}>-${lc.toLocaleString()} local</span>:null;})()}
+                                </div>
+                              </div>
                               {/* Status badge */}
                               <div style={{position:"relative",flexShrink:0}} onClick={e=>e.stopPropagation()}>
                                 <select value={l.status||""} onChange={e=>{isAdmin&&setLoad(group.id,l.id,"status",e.target.value);trackField("status");}}
@@ -2387,7 +2392,13 @@ ${accRows.length>0?`
                                 {/* Pickup + delivery + local charge */}
                                 <div style={{display:"flex",gap:"10px",marginBottom:"7px",color:"#475569",flexWrap:"wrap",alignItems:"center"}}>
                                   {l.pickup&&<span>🛫 {l.pickup}</span>}
-                                  {l.delivery&&<span>📦 {l.delivery}</span>}
+                                  {/* Delivery — editable */}
+                                  <span style={{display:"flex",alignItems:"center",gap:"3px"}}>
+                                    <span>📦</span>
+                                    {isAdmin?(
+                                      <input defaultValue={l.delivery||""} onBlur={e=>{if(e.target.value!==(l.delivery||"")){setLoad(group.id,l.id,"delivery",e.target.value);trackField("delivery");}}} style={{border:"1px solid #bfdbfe",borderRadius:"4px",background:"#fff",fontSize:"10px",color:"#475569",padding:"1px 4px",outline:"none",fontFamily:"inherit",width:"120px"}} placeholder="Delivery date"/>
+                                    ):<span style={{color:"#475569"}}>{l.delivery||"—"}</span>}
+                                  </span>
                                   {/* Local charge — auto-computed, manually overridable */}
                                   <span style={{display:"flex",alignItems:"center",gap:"4px",marginLeft:"auto"}}>
                                     <span style={{fontSize:"9px",fontWeight:"600",color:"#64748b",textTransform:"uppercase"}}>Local $</span>
