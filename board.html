@@ -2413,7 +2413,7 @@ ${accRows.length>0?`
                         </div>
                       </div>
                       {/* Load list — show full pickup+delivery datetime */}
-                      {[...(group.loads||[])].sort((a,b)=>{const ta=parseTS(a.pickup)||Infinity;const tb=parseTS(b.pickup)||Infinity;return ta-tb;}).map((l,li)=>{
+                      {[...(group.loads||[])].sort((a,b)=>{const pa=new Date((a.delivery||"").split(" ")[0]).getTime()||Infinity;const pb=new Date((b.delivery||"").split(" ")[0]).getTime()||Infinity;return pa-pb;}).map((l,li)=>{
                         const sr=parseSR(l.sr||"");
                         const lST={"Need to Pickup":{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"},"Dock":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Yard":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"Loaded":{bg:"#dcfce7",c:"#14532d",bd:"#22c55e"},"Dispatched":{bg:"#dbeafe",c:"#1e40af",bd:"#3b82f6"},"Picked Up":{bg:"#fef9c3",c:"#713f12",bd:"#eab308"},"In Transit":{bg:"#ffedd5",c:"#9a3412",bd:"#f97316"},"Loaded":{bg:"#dcfce7",c:"#14532d",bd:"#22c55e"},"Delivered":{bg:"#dcfce7",c:"#14532d",bd:"#16a34a"}};
                         const lSp=l.status?lST[l.status]||{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"}:{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"};
@@ -3468,10 +3468,26 @@ ${accRows.length>0?`
                                         </>
                                       )}
                                     </div>
-                                    {/* Right: miles + price */}
-                                    <div style={{display:"flex",alignItems:"center",gap:"10px",flexShrink:0}}>
-                                      {(()=>{const mi=group.tripMiles!==""&&group.tripMiles!=null?parseFloat(group.tripMiles):group.calcTripMi?parseFloat(group.calcTripMi):group.autoTripMi?parseFloat(group.autoTripMi):null;return mi?<span style={{fontSize:"11px",fontWeight:"700",color:hasDriver?"rgba(255,255,255,.6)":"#fca5a5",background:"rgba(255,255,255,.08)",padding:"2px 7px",borderRadius:"5px"}}>{Math.round(mi).toLocaleString()} mi</span>:null;})()}
-                                      <span style={{fontSize:"13px",fontWeight:"900",color:hasDriver?"#86efac":"#b91c1c"}}>${netRate.toLocaleString()}</span>
+                                    {/* Right: miles only */}
+                                    <div style={{display:"flex",alignItems:"center",flexShrink:0}}>
+                                      {(()=>{const mi=group.tripMiles!==""&&group.tripMiles!=null?parseFloat(group.tripMiles):group.calcTripMi?parseFloat(group.calcTripMi):group.autoTripMi?parseFloat(group.autoTripMi):null;return mi?<span style={{fontSize:"11px",fontWeight:"700",color:hasDriver?"rgba(255,255,255,.55)":"#fca5a5",background:"rgba(255,255,255,.08)",padding:"2px 7px",borderRadius:"5px"}}>{Math.round(mi).toLocaleString()} mi</span>:null;})()}
+                                    </div>
+                                  </div>
+                                  {/* Financial summary bar */}
+                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 12px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",flexWrap:"wrap",gap:"6px"}}>
+                                    <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
+                                      <span style={{fontSize:"10px",color:"#64748b",fontWeight:"600"}}>Gross</span>
+                                      <span style={{fontSize:"13px",fontWeight:"800",color:"#0f1f3d"}}>${grossRate.toLocaleString()}</span>
+                                    </div>
+                                    <span style={{fontSize:"12px",color:"#94a3b8",fontWeight:"700"}}>−</span>
+                                    <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
+                                      <span style={{fontSize:"10px",color:"#b45309",fontWeight:"600"}}>Local</span>
+                                      <span style={{fontSize:"13px",fontWeight:"800",color:"#b45309"}}>${Math.round(locCost).toLocaleString()}</span>
+                                    </div>
+                                    <span style={{fontSize:"12px",color:"#94a3b8",fontWeight:"700"}}>=</span>
+                                    <div style={{display:"flex",alignItems:"center",gap:"4px",background:"#f0fdf4",border:"1.5px solid #22c55e",borderRadius:"7px",padding:"3px 10px"}}>
+                                      <span style={{fontSize:"10px",color:"#15803d",fontWeight:"700"}}>Net</span>
+                                      <span style={{fontSize:"15px",fontWeight:"900",color:"#15803d"}}>${netRate.toLocaleString()}</span>
                                     </div>
                                   </div>
                                   {/* CLAIM BAR — visible to everyone when no driver assigned */}
@@ -3522,11 +3538,7 @@ ${accRows.length>0?`
                                   )}
                                   {/* Stops list */}
                                   <div style={{padding:"8px 12px",display:"flex",flexDirection:"column",gap:"6px"}}>
-                                    {[...loads].sort((a,b)=>{
-                                        const ta=new Date(a.pickup||'').getTime()||Infinity;
-                                        const tb=new Date(b.pickup||'').getTime()||Infinity;
-                                        return ta-tb;
-                                      }).map((l,li)=>{
+                                    {[...loads].sort((a,b)=>{const pa=new Date((a.delivery||"").split(" ")[0]).getTime()||Infinity;const pb=new Date((b.delivery||"").split(" ")[0]).getTime()||Infinity;return pa-pb;}).map((l,li)=>{
                                       const sr=parseSR(l.sr||"");
                                       const lSt=l.status||"";
                                       const lStColor={"Dispatched":"#2563eb","Need to Pickup":"#dc2626","Dock":"#7c3aed","Yard":"#ca8a04","Loaded":"#059669","In Transit":"#c2410c"}[lSt]||"#94a3b8";
