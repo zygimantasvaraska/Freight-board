@@ -2118,7 +2118,9 @@ ${accRows.length>0?`
                   const isTomorrow2=pt2===tomorrowDay.getTime();
                   const isPast2=pt2&&pt2<today.getTime();
                   // Effective status for display
-                  const effectiveSt=load.status||(isPast2||isToday2?"Need to pickup":isTomorrow2?"Tomorrow":"");
+                  // Override "Need to pickup" to "Tomorrow" if pickup is actually tomorrow
+                  const rawSt = load.status || (isPast2||isToday2?"Need to pickup":isTomorrow2?"Tomorrow":"");
+                  const effectiveSt = (rawSt==="Need to pickup"&&isTomorrow2) ? "Tomorrow" : rawSt;
                   let sp;if(effectiveSt){sp=ST[effectiveSt]||{bg:"#fee2e2",c:"#991b1b",bd:"#ef4444"};}else{sp={bg:"#f1f5f9",c:"#9ca3af",bd:"#e2e8f0"};}
                   const otrDriver=group.groupDriver||"";
                   const localDriver=load.driver||"";
