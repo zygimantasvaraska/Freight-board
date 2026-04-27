@@ -994,7 +994,7 @@ function App(){
       }catch(e){}
       // Sheets save — no-cors fetch always throws TypeError on redirect but data still saves
       try{
-        await sheetsSave({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta,dispatcherEmails:dispatcherEmails,
+        await sheetsSave({weeks:w,customDrivers:cd,customTrucks:ct,customTrailers:ctr,dispatchers:disp,truckAssignments:ta,dispatcherEmails:(ls.dispatcherEmails&&ls.dispatcherEmails.length?ls.dispatcherEmails:(()=>{try{return JSON.parse(localStorage.getItem("fcbv2_disp_emails")||"[]");}catch(e){return[];}})()),
         adminPin:localStorage.getItem(ADMIN_PIN_KEY)||"",viewerPin:localStorage.getItem(VIEWER_PIN_KEY)||""});
         setSaveStatus("saved");setTimeout(()=>setSaveStatus("idle"),3000);
       }catch(err){
