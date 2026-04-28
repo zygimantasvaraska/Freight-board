@@ -3674,127 +3674,115 @@ ${accRows.length>0?`
                               const netRate=grossRate-locCost;
                               const hasDriver=!!(group.groupDriver&&group.groupDriver.trim());
                               return(
-                                <div key={group.id} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:"10px",overflow:"hidden",borderLeft:`4px solid ${stStyle.bd}`}}>
-                                  {/* Driver bar — Truck | Trailer | Driver on left, Miles | Price on right */}
-                                  <div style={{background:hasDriver?"#0f1f3d":"#fee2e2",padding:"8px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px"}}>
-                                    {/* Left: truck + trailer + driver */}
-                                    <div style={{display:"flex",alignItems:"center",gap:"6px",flex:1,minWidth:0,flexWrap:"wrap"}}>
-                                      {hasDriver?(
-                                        <>
-                                          {group.groupTruck&&<span style={{fontSize:"11px",fontWeight:"800",color:"#fff",background:"rgba(255,255,255,.15)",padding:"2px 7px",borderRadius:"5px",flexShrink:0}}>#{group.groupTruck}</span>}
-                                          {group.groupTrailer&&<span style={{fontSize:"11px",fontWeight:"800",color:"#c4b5fd",background:"rgba(167,139,250,.2)",padding:"2px 7px",borderRadius:"5px",flexShrink:0}}>T{group.groupTrailer}</span>}
-                                          <span style={{fontSize:"11px",fontWeight:"700",color:"#86efac",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{group.groupDriver}</span>
-                                        </>
-                                      ):(
-                                        <>
-                                          <span style={{fontSize:"13px"}}>⚠️</span>
-                                          <span style={{fontSize:"11px",fontWeight:"800",color:"#b91c1c",letterSpacing:".01em",flex:1}}>NO DRIVER ASSIGNED</span>
+                                <div key={group.id} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:"10px",overflow:"hidden",borderLeft:`4px solid ${stStyle.bd}`,boxShadow:"0 1px 4px rgba(0,0,0,.06)"}}>
 
-                                        </>
-                                      )}
-                                    </div>
-                                    {/* Right: miles only */}
-                                    <div style={{display:"flex",alignItems:"center",flexShrink:0}}>
-                                      {(()=>{const mi=group.tripMiles!==""&&group.tripMiles!=null?parseFloat(group.tripMiles):group.calcTripMi?parseFloat(group.calcTripMi):group.autoTripMi?parseFloat(group.autoTripMi):null;return mi?<span style={{fontSize:"11px",fontWeight:"700",color:hasDriver?"rgba(255,255,255,.55)":"#fca5a5",background:"rgba(255,255,255,.08)",padding:"2px 7px",borderRadius:"5px"}}>{Math.round(mi).toLocaleString()} mi</span>:null;})()}
-                                    </div>
+                                  {/* Header — dark navy with truck/trailer/driver/miles */}
+                                  <div style={{background:hasDriver?"#0f1f3d":"#fee2e2",padding:"9px 14px",display:"flex",alignItems:"center",gap:"7px",flexWrap:"wrap"}}>
+                                    {hasDriver?(
+                                      <>
+                                        {group.groupTruck&&<span style={{fontSize:"11px",fontWeight:"800",color:"#fff",background:"rgba(255,255,255,.15)",padding:"2px 7px",borderRadius:"4px",flexShrink:0}}>#{group.groupTruck}</span>}
+                                        {group.groupTrailer&&<span style={{fontSize:"11px",fontWeight:"800",color:"#c4b5fd",background:"rgba(167,139,250,.2)",padding:"2px 7px",borderRadius:"4px",flexShrink:0}}>T{group.groupTrailer}</span>}
+                                        <span style={{fontSize:"12px",fontWeight:"700",color:"#86efac",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{group.groupDriver}</span>
+                                      </>
+                                    ):(
+                                      <>
+                                        <span style={{fontSize:"13px"}}>⚠️</span>
+                                        <span style={{fontSize:"11px",fontWeight:"800",color:"#b91c1c",flex:1}}>NO DRIVER ASSIGNED</span>
+                                      </>
+                                    )}
+                                    {(()=>{const mi=group.tripMiles!==""&&group.tripMiles!=null?parseFloat(group.tripMiles):group.calcTripMi?parseFloat(group.calcTripMi):group.autoTripMi?parseFloat(group.autoTripMi):null;return mi?<span style={{fontSize:"10px",fontWeight:"600",color:hasDriver?"rgba(255,255,255,.45)":"#fca5a5",background:"rgba(255,255,255,.08)",padding:"2px 6px",borderRadius:"4px",flexShrink:0}}>{Math.round(mi).toLocaleString()} mi</span>:null;})()}
                                   </div>
-                                  {/* Financial summary bar */}
-                                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 12px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",flexWrap:"wrap",gap:"6px"}}>
-                                    <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
-                                      <span style={{fontSize:"10px",color:"#64748b",fontWeight:"600"}}>Gross</span>
-                                      <span style={{fontSize:"13px",fontWeight:"800",color:"#0f1f3d"}}>${grossRate.toLocaleString()}</span>
-                                    </div>
-                                    <span style={{fontSize:"12px",color:"#94a3b8",fontWeight:"700"}}>−</span>
-                                    <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
-                                      <span style={{fontSize:"10px",color:"#b45309",fontWeight:"600"}}>Local</span>
-                                      <span style={{fontSize:"13px",fontWeight:"800",color:"#b45309"}}>${Math.round(locCost).toLocaleString()}</span>
-                                    </div>
-                                    <span style={{fontSize:"12px",color:"#94a3b8",fontWeight:"700"}}>=</span>
-                                    <div style={{display:"flex",alignItems:"center",gap:"4px",background:"#f0fdf4",border:"1.5px solid #22c55e",borderRadius:"7px",padding:"3px 10px"}}>
-                                      <span style={{fontSize:"10px",color:"#15803d",fontWeight:"700"}}>Net</span>
-                                      <span style={{fontSize:"15px",fontWeight:"900",color:"#15803d"}}>${netRate.toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                  {/* CLAIM BAR — visible to everyone when no driver assigned */}
-                                  {!hasDriver&&(
-                                    <div style={{background:"linear-gradient(90deg,#fef3c7,#fde68a)",borderTop:"2px solid #f59e0b",padding:"7px 12px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
-                                      <span style={{fontSize:"14px",flexShrink:0}}>🚛</span>
-                                      <span style={{fontSize:"11px",fontWeight:"700",color:"#78350f",flex:1,minWidth:"120px"}}>Available — enter your name to claim:</span>
-                                      <input
-                                        id={`claim-${group.id}`}
-                                        type="text"
-                                        placeholder="Your name..."
-                                        onClick={e=>e.stopPropagation()}
-                                        style={{border:"2px solid #f59e0b",borderRadius:"6px",padding:"4px 8px",fontSize:"11px",fontWeight:"600",color:"#78350f",background:"#fff",outline:"none",width:"130px",flexShrink:0}}
-                                      />
-                                      <button
-                                        onClick={e=>{
-                                          e.stopPropagation();
-                                          const inp=document.getElementById(`claim-${group.id}`);
-                                          const name=(inp?inp.value:"").trim();
-                                          if(!name){inp&&inp.focus();return;}
-                                          const wkIdx=weeks.findIndex(w=>(w.groups||[]).some(g=>g.id===group.id));
-                                          if(wkIdx>=0){
-                                            const wk=weeks[wkIdx];
-                                            const grp=(wk.groups||[]).find(g=>g.id===group.id);
-                                            const updated=weeks.map((w,i)=>i!==wkIdx?w:{...w,groups:(w.groups||[]).map(g=>g.id!==group.id?g:{...g,groupDriver:name,securedBy:name,securedAt:Date.now()})});
-                                            setWeeksAndSave(updated);
-                                            // Write claim notification to localStorage so admin board tab picks it up
-                                            const claimNotif={
-                                              id:Date.now(),
-                                              type:"claim",
-                                              claimedBy:name,
-                                              claimedAt:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
-                                              trailer:grp?.groupTrailer||grp?.groupTruck||"",
-                                              stops:(grp?.loads||[]).length,
-                                              routes:(grp?.loads||[]).map(l=>{const p=l.sr?l.sr.split(" - "):[];return p[1]||p[0]||"";}).filter(Boolean).join(" → "),
-                                              weekLabel:wk.label||""
-                                            };
-                                            try{
-                                              const existing=JSON.parse(localStorage.getItem("fcbv2_claim_notifs")||"[]");
-                                              existing.unshift(claimNotif);
-                                              localStorage.setItem("fcbv2_claim_notifs",JSON.stringify(existing.slice(0,20)));
-                                            }catch(e){}
-                                          }
-                                        }}
-                                        style={{background:"#d97706",color:"#fff",border:"none",borderRadius:"6px",padding:"4px 12px",fontSize:"11px",fontWeight:"800",cursor:"pointer",flexShrink:0}}
-                                      >✓ Claim</button>
-                                    </div>
-                                  )}
-                                  {/* Stops list */}
-                                  <div style={{padding:"8px 12px",display:"flex",flexDirection:"column",gap:"6px"}}>
-                                    {[...loads].sort((a,b)=>{const da=a.delivery||a.pickup||"";const db=b.delivery||b.pickup||"";const pa=new Date(da.split(" ")[0]).getTime()||Infinity;const pb=new Date(db.split(" ")[0]).getTime()||Infinity;return pa-pb;}).map((l,li)=>{
-                                      const sr=parseSR(l.sr||"");
-                                      // Override status for display on dashboard
-                                      const lRawSt=l.status||"";
-                                      const lPuDash=new Date((l.pickup||"").split(" ")[0]);
-                                      lPuDash.setHours(0,0,0,0);
-                                      const lPuTsDash=isNaN(lPuDash.getTime())?null:lPuDash.getTime();
-                                      const lIsTomDash=lPuTsDash===tomorrowDay.getTime();
-                                      const lIsTodayDash=lPuTsDash===today.getTime();
-                                      const lIsPastDash=lPuTsDash&&lPuTsDash<today.getTime();
-                                      const lSt=(()=>{
-                                        if(lIsTomDash&&(lRawSt===""||lRawSt.toLowerCase()==="need to pickup"))return "Tomorrow";
-                                        if((lIsTodayDash||lIsPastDash)&&lRawSt==="")return "Need to pickup";
-                                        return lRawSt;
-                                      })();
-                                      const lStColorMap={"need to pickup":"#dc2626","need to Pickup":"#dc2626","dispatched":"#2563eb","dock":"#7c3aed","yard":"#ca8a04","loaded":"#059669","in transit":"#c2410c","delivered":"#16a34a","tomorrow":"#f97316"};
-                                      const lStColor=lStColorMap[(lSt||"").toLowerCase()]||"#94a3b8";
+
+                                  {/* Route flow — all cities in one row */}
+                                  <div style={{padding:"12px 14px 8px"}}>
+                                    {(()=>{
+                                      const sortedLoads=[...loads].sort((a,b)=>{const da=a.delivery||a.pickup||"";const db=b.delivery||b.pickup||"";return(new Date(da.split(" ")[0]).getTime()||Infinity)-(new Date(db.split(" ")[0]).getTime()||Infinity);});
+                                      const origin=sortedLoads.length>0?parseSR(sortedLoads[0].sr||"").s:"";
                                       return(
-                                        <div key={l.id} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"5px 0",borderBottom:li<loads.length-1?"1px solid #f1f5f9":"none"}}>
-                                          <span style={{width:"18px",height:"18px",borderRadius:"4px",background:"#1e3a5f",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:"9px",fontWeight:"800",color:"#93c5fd",flexShrink:0,marginTop:"1px"}}>{li+1}</span>
-                                          <div style={{flex:1,minWidth:0}}>
-                                            <div style={{fontSize:"12px",fontWeight:"600",color:"#0f1f3d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sr.r||sr.s||"—"}</div>
-                                            <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
-                                              {l.pickup&&<span style={{fontSize:"10px",color:"#475569"}}>🛫 {l.pickup}</span>}
-                                              {l.delivery&&<span style={{fontSize:"10px",color:"#475569"}}>📦 {l.delivery}</span>}
-                                            </div>
+                                        <div style={{display:"flex",alignItems:"flex-start",gap:"0",marginBottom:"10px",overflowX:"auto"}}>
+                                          {/* Origin city */}
+                                          <div style={{textAlign:"center",minWidth:"90px",flexShrink:0}}>
+                                            <div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"600",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"3px"}}>Origin</div>
+                                            <div style={{fontSize:"11px",fontWeight:"600",color:"#0f1f3d",lineHeight:1.2}}>{origin||"—"}</div>
                                           </div>
-                                          {lSt&&<span style={{fontSize:"9px",fontWeight:"700",color:lStColor,background:lStColor+"18",padding:"1px 5px",borderRadius:"4px",flexShrink:0,whiteSpace:"nowrap"}}>{lSt}</span>}
+                                          {/* Each stop */}
+                                          {sortedLoads.map((l,li)=>{
+                                            const sr=parseSR(l.sr||"");
+                                            // effective status
+                                            const lRawSt=l.status||"";
+                                            const lPD=new Date((l.pickup||"").split(" ")[0]);lPD.setHours(0,0,0,0);
+                                            const lPTs=isNaN(lPD.getTime())?null:lPD.getTime();
+                                            const lIsTom=lPTs===tomorrowDay.getTime();
+                                            const lIsToday=lPTs===today.getTime();
+                                            const lIsPast=lPTs&&lPTs<today.getTime();
+                                            const lSt=(()=>{if(lIsTom&&(lRawSt===""||lRawSt.toLowerCase()==="need to pickup"))return "Tomorrow";if((lIsToday||lIsPast)&&lRawSt==="")return "Need to pickup";return lRawSt;})();
+                                            const stColorMap={"need to pickup":"#dc2626","dispatched":"#2563eb","dock":"#7c3aed","yard":"#ca8a04","loaded":"#059669","in transit":"#c2410c","delivered":"#16a34a","tomorrow":"#f97316"};
+                                            const stColor=stColorMap[(lSt||"").toLowerCase()]||"#94a3b8";
+                                            return(
+                                              <React.Fragment key={l.id}>
+                                                {/* Arrow line */}
+                                                <div style={{flex:1,display:"flex",alignItems:"center",paddingTop:"14px",minWidth:"20px"}}>
+                                                  <div style={{flex:1,borderTop:"1.5px solid #cbd5e1"}}/>
+                                                  <span style={{fontSize:"12px",color:"#94a3b8",flexShrink:0}}>›</span>
+                                                </div>
+                                                {/* Destination */}
+                                                <div style={{textAlign:"center",minWidth:"90px",flexShrink:0}}>
+                                                  <div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"600",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"3px"}}>Stop {li+1}</div>
+                                                  <div style={{fontSize:"11px",fontWeight:"600",color:"#0f1f3d",lineHeight:1.2,marginBottom:"3px"}}>{sr.r||sr.s||"—"}</div>
+                                                  {l.delivery&&<div style={{fontSize:"9px",color:"#475569"}}>Del: {l.delivery}</div>}
+                                                  {lSt&&<div style={{fontSize:"9px",fontWeight:"700",color:stColor,marginTop:"2px"}}>{lSt}</div>}
+                                                </div>
+                                              </React.Fragment>
+                                            );
+                                          })}
                                         </div>
                                       );
-                                    })}
+                                    })()}
+
+                                    {/* Ready time — if set */}
+                                    {group.readyTime&&(
+                                      <div style={{display:"flex",alignItems:"center",gap:"8px",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:"6px",padding:"5px 10px",marginBottom:"8px"}}>
+                                        <span style={{fontSize:"9px",fontWeight:"700",color:"#15803d",textTransform:"uppercase",letterSpacing:".04em"}}>Ready</span>
+                                        <span style={{fontSize:"12px",fontWeight:"600",color:"#15803d"}}>{group.readyTime}</span>
+                                      </div>
+                                    )}
+
+                                    {/* CLAIM BAR — when no driver */}
+                                    {!hasDriver&&(
+                                      <div style={{background:"linear-gradient(90deg,#fef3c7,#fde68a)",border:"1.5px solid #f59e0b",borderRadius:"7px",padding:"7px 10px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap",marginBottom:"8px"}}>
+                                        <span style={{fontSize:"13px",flexShrink:0}}>🚛</span>
+                                        <span style={{fontSize:"11px",fontWeight:"700",color:"#78350f",flex:1,minWidth:"100px"}}>Available — enter your name to claim:</span>
+                                        <input
+                                          id={`claim-${group.id}`}
+                                          type="text"
+                                          placeholder="Your name..."
+                                          onClick={e=>e.stopPropagation()}
+                                          style={{border:"2px solid #f59e0b",borderRadius:"6px",padding:"4px 8px",fontSize:"11px",fontWeight:"600",color:"#78350f",background:"#fff",outline:"none",width:"120px",flexShrink:0}}
+                                        />
+                                        <button
+                                          onClick={e=>{
+                                            e.stopPropagation();
+                                            const inp=document.getElementById(`claim-${group.id}`);
+                                            const name=(inp?inp.value:"").trim();
+                                            if(!name){inp&&inp.focus();return;}
+                                            const wkIdx=weeks.findIndex(w=>(w.groups||[]).some(g=>g.id===group.id));
+                                            if(wkIdx>=0){
+                                              const updated=weeks.map((w,i)=>i!==wkIdx?w:{...w,groups:(w.groups||[]).map(g=>g.id!==group.id?g:{...g,groupDriver:name,securedBy:name,securedAt:Date.now()})});
+                                              setWeeksAndSave(updated);
+                                            }
+                                          }}
+                                          style={{background:"#d97706",color:"#fff",border:"none",borderRadius:"6px",padding:"4px 12px",fontSize:"11px",fontWeight:"800",cursor:"pointer",flexShrink:0}}
+                                        >✓ Claim</button>
+                                      </div>
+                                    )}
+
+                                    {/* Net revenue — bottom */}
+                                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderTop:"0.5px solid #e2e8f0",paddingTop:"8px"}}>
+                                      <span style={{fontSize:"10px",color:"#94a3b8"}}>Net after local expenses</span>
+                                      <span style={{fontSize:"16px",fontWeight:"800",color:"#15803d"}}>${netRate.toLocaleString()}</span>
+                                    </div>
                                   </div>
+
                                 </div>
                               );
                             })}
