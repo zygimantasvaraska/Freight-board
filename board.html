@@ -2075,6 +2075,8 @@ ${accRows.length>0?`
 
           {pendingGroups.filter(g=>!g.isCombined).map((group,gi)=>{
             const gsSt=GSS[group.groupStatus]||GSS["Pending"];
+            const isClaimed=!!(group.securedAt&&group.groupDriver);
+            const canEdit=isAdmin||!isClaimed;
             const earliestPU=Math.min(...group.loads.map(l=>parseTS(l.pickup)));
             const puDate=isFinite(earliestPU)?new Date(earliestPU):null;
             const puDay=puDate?new Date(puDate.getFullYear(),puDate.getMonth(),puDate.getDate()):null;
