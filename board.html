@@ -618,6 +618,7 @@ function App(){
   const[distMisses,setDistMisses]=useState({});
   const[distOverrides,setDistOverrides]=useState(()=>{try{return JSON.parse(localStorage.getItem("fcbv2_distoverrides")||"{}");}catch(e){return{};}});
   const[dispatcherEmails,setDispatcherEmails]=useState(()=>{try{return JSON.parse(localStorage.getItem("fcbv2_disp_emails")||"[]");}catch{return[];}});
+  const[adminEmail,setAdminEmail]=useState(()=>localStorage.getItem("fcbv2_adminEmail")||"");
   const[showEmailModal,setShowEmailModal]=useState(false);
   const[supabaseUrl,setSupabaseUrl]=useState(()=>localStorage.getItem("fcbv2_sb_url")||"");
   const[supabaseKey,setSupabaseKey]=useState(()=>localStorage.getItem("fcbv2_sb_key")||"");
@@ -785,6 +786,28 @@ function App(){
         // If Sheets has data, ALWAYS prefer it — prevents stale local from overwriting fresh server data.
         const sheetsHasData=rawWeeks.length>0;
         const useLocalData=!sheetsHasData&&local.weeks&&local.weeks.length>0;
+        // CLAIM PROTECTION: if local data has a group with securedAt newer than Sheets version, preserve it
+        if(sheetsHasData&&local.weeks&&local.weeks.length>0){
+          const localSavedRecently=(now=>now-localSavedAt<30000)(Date.now());
+          if(localSavedRecently){
+            rawWeeks.forEach(function(sw,wi){
+              const lw=local.weeks&&local.weeks[wi];
+              if(!lw)return;
+              (sw.groups||[]).forEach(function(sg,gi){
+                const lg=(lw.groups||[])[gi];
+                if(!lg)return;
+                const lgAt=lg.securedAt||0;
+                const sgAt=sg.securedAt||0;
+                // If local has a newer claim, keep it
+                if(lgAt>sgAt&&lg.groupDriver&&!sg.groupDriver){
+                  sg.groupDriver=lg.groupDriver;
+                  sg.securedBy=lg.securedBy;
+                  sg.securedAt=lg.securedAt;
+                }
+              });
+            });
+          }
+        }
         // Strip stale tripPrice from all loads (old board stored this incorrectly)
         const stripTripPrice=(weeks)=>weeks.map(w=>({...w,groups:(w.groups||[]).map(g=>({...g,loads:(g.loads||[]).map(l=>{const{tripPrice:_,...rest}=l;return rest;})}))}));
         if(sheetsHasData)rawWeeks.splice(0,rawWeeks.length,...stripTripPrice(rawWeeks));
@@ -1589,10 +1612,26 @@ ${accRows.length>0?`
         <div className="modal-bg" onClick={()=>setShowEmailModal(false)}>
           <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:"480px",width:"90%"}}>
             <div style={{fontWeight:"800",fontSize:"16px",color:"#0f1f3d",marginBottom:"16px",display:"flex",alignItems:"center",gap:"8px"}}>
-              📧 Dispatcher Email List
+              📧 Email Settings
             </div>
-            <div style={{fontSize:"12px",color:"#64748b",marginBottom:"12px",lineHeight:"1.5"}}>
-              Add dispatcher emails below. When unassigned Combined loads appear on the Dashboard, the Apps Script will automatically email everyone on this list.
+            {/* Admin email — receives claim notifications */}
+            <div style={{marginBottom:"16px",padding:"12px",background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:"8px"}}>
+              <div style={{fontSize:"11px",fontWeight:"700",color:"#15803d",marginBottom:"6px",textTransform:"uppercase",letterSpacing:".04em"}}>Admin Email (claim notifications)</div>
+              <div style={{fontSize:"11px",color:"#64748b",marginBottom:"8px"}}>You'll receive an email whenever a dispatcher claims a load.</div>
+              <div style={{display:"flex",gap:"6px"}}>
+                <input
+                  type="email"
+                  value={adminEmail}
+                  onChange={e=>setAdminEmail(e.target.value)}
+                  placeholder="admin@yourcompany.com"
+                  style={{flex:1,border:"1px solid #bbf7d0",borderRadius:"6px",padding:"7px 10px",fontSize:"12px",outline:"none"}}
+                />
+                <button onClick={()=>{const v=adminEmail.trim();localStorage.setItem('fcbv2_adminEmail',v);alert(v?"Admin email saved!":"Admin email cleared.");}} style={{background:"#059669",color:"#fff",border:"none",borderRadius:"6px",padding:"7px 14px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>Save</button>
+              </div>
+            </div>
+            <div style={{fontSize:"11px",fontWeight:"700",color:"#374151",marginBottom:"6px",textTransform:"uppercase",letterSpacing:".04em"}}>Dispatcher Emails (load offer notifications)</div>
+            <div style={{fontSize:"11px",color:"#64748b",marginBottom:"10px",lineHeight:"1.5"}}>
+              Dispatchers receive emails when unassigned Combined loads are available.
             </div>
             <div style={{marginBottom:"12px"}}>
               {dispatcherEmails.map((email,i)=>(
@@ -2113,10 +2152,11 @@ ${accRows.length>0?`
                             list={`otr-quick-${group.id}`}
                             placeholder="Assign OTR driver..."
                             defaultValue=""
-                            onBlur={e=>{const v=e.target.value.trim();if(v){setGroup(group.id,"groupDriver",v);e.target.value="";}}}
-                            onKeyDown={e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(v){setGroup(group.id,"groupDriver",v);e.target.value="";}}}}
+                            onBlur={e=>{const v=e.target.value.trim();if(v&&canEdit){setGroup(group.id,"groupDriver",v);e.target.value="";}}}
+                            onKeyDown={e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(v&&canEdit){setGroup(group.id,"groupDriver",v);e.target.value="";};}}}
                             onClick={e=>e.stopPropagation()}
-                            style={{fontSize:"9px",background:"rgba(134,239,172,.1)",border:"1px solid rgba(134,239,172,.3)",borderRadius:"4px",padding:"2px 6px",color:"#86efac",outline:"none",width:"120px",fontFamily:"inherit"}}
+                            disabled={!canEdit}
+                            style={{fontSize:"9px",background:"rgba(134,239,172,.1)",border:"1px solid rgba(134,239,172,.3)",borderRadius:"4px",padding:"2px 6px",color:"#86efac",outline:"none",width:"120px",fontFamily:"inherit",opacity:canEdit?1:.5,cursor:canEdit?"text":"not-allowed"}}
                           />
                           <datalist id={`otr-quick-${group.id}`}>
                             {[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}/>))}
@@ -2126,7 +2166,7 @@ ${accRows.length>0?`
                     </div>
                   )}
                   {isAdmin&&!hasDriver&&<div style={{display:"flex",alignItems:"center",gap:"3px",flexShrink:0}} onClick={e=>e.stopPropagation()}>
-                    <select value={group.groupDriver||""} onChange={e=>setGroup(group.id,"groupDriver",e.target.value)} style={{border:"1px solid rgba(134,239,172,.3)",borderRadius:"4px",background:"rgba(0,0,0,.3)",color:"#86efac",fontSize:"9px",fontWeight:"600",padding:"1px 4px",cursor:"pointer",outline:"none",maxWidth:"110px"}}>
+                    <select value={group.groupDriver||""} onChange={e=>{if(canEdit)setGroup(group.id,"groupDriver",e.target.value);}} disabled={!canEdit} style={{border:"1px solid rgba(134,239,172,.3)",borderRadius:"4px",background:"rgba(0,0,0,.3)",color:"#86efac",fontSize:"9px",fontWeight:"600",padding:"1px 4px",cursor:"pointer",outline:"none",maxWidth:"110px"}}>
                       <option value="" style={{background:"#1e3a5f",color:"#fff"}}>— OTR Driver —</option>
                       {[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d} style={{background:"#1e3a5f",color:"#fff"}}>{d}</option>))}
                     </select>
@@ -2429,6 +2469,9 @@ ${accRows.length>0?`
                     return s+(um2!=null?localCharge(um2)||0:0);
                   },0);
                   const gNet=Math.round(gGross-gLoc);
+                  // Lock claimed groups for non-admins — only admin can modify after claim
+                  const isClaimed=!!(group.securedAt&&group.groupDriver);
+                  const canEdit=isAdmin||!isClaimed;
                   const gi=(week.groups||[]).indexOf(group);
                   const COMBINED_STATUSES=["Preplanned","Future","Not dispatched","Loaded","Ready"];
                   const cSt=group.combinedStatus||"Preplanned";
@@ -2438,6 +2481,7 @@ ${accRows.length>0?`
                       {/* Header row: T# · stops · urgency tag */}
                       <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"5px",flexWrap:"wrap"}}>
                         <span style={{fontSize:"12px",fontWeight:"700",color:"#0f1f3d"}}>T{gi+1} · {(group.loads||[]).length} stops</span>
+                        {isClaimed&&!isAdmin&&<span style={{fontSize:"9px",fontWeight:"700",color:"#059669",background:"#f0fdf4",border:"1px solid #bbf7d0",padding:"2px 7px",borderRadius:"4px"}}>🔒 Claimed</span>}
                         <span style={{fontSize:"11px",fontWeight:"700",color:"#059669",marginLeft:"auto"}} title="Net after local expenses">${gNet.toLocaleString()}</span>
                       </div>
                       {/* No Driver warning bar */}
@@ -2472,7 +2516,7 @@ ${accRows.length>0?`
                           <div style={{display:"flex",gap:"5px"}}>
                             <div style={{display:"flex",alignItems:"center",gap:"4px",flex:1}}>
                               <span style={{fontSize:"9px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",width:"44px",flexShrink:0}}>Truck</span>
-                              <select value={group.groupTruck||""} onChange={e=>{const tk=e.target.value;const updFields={groupTruck:tk};if(tk&&truckAssignments[tk])updFields.groupDriver=truckAssignments[tk];setW("groups",week.groups.map(g=>g.id!==group.id?g:{...g,...updFields}));}}
+                              <select value={group.groupTruck||""} onChange={e=>{if(!canEdit)return;const tk=e.target.value;const updFields={groupTruck:tk};if(tk&&truckAssignments[tk])updFields.groupDriver=truckAssignments[tk];setW("groups",week.groups.map(g=>g.id!==group.id?g:{...g,...updFields}));}}
                                 style={{flex:1,border:"1px solid #e0f2fe",borderRadius:"5px",padding:"3px 5px",fontSize:"11px",fontWeight:"600",color:group.groupTruck?"#0369a1":"#94a3b8",background:"#fff",cursor:"pointer",outline:"none"}}>
                                 <option value="">— Truck —</option>
                                 {[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}>#{t}</option>))}
@@ -2480,7 +2524,7 @@ ${accRows.length>0?`
                             </div>
                             <div style={{display:"flex",alignItems:"center",gap:"4px",flex:1}}>
                               <span style={{fontSize:"9px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",width:"44px",flexShrink:0}}>Trailer</span>
-                              <select value={group.groupTrailer||""} onChange={e=>setGroup(group.id,"groupTrailer",e.target.value)}
+                              <select value={group.groupTrailer||""} onChange={e=>{if(canEdit)setGroup(group.id,"groupTrailer",e.target.value);}} disabled={!canEdit}
                                 style={{flex:1,border:"1px solid #ede9fe",borderRadius:"5px",padding:"3px 5px",fontSize:"11px",fontWeight:"600",color:group.groupTrailer?"#7c3aed":"#94a3b8",background:"#fff",cursor:"pointer",outline:"none"}}>
                                 <option value="">— Trailer —</option>
                                 {[...TRAILER_NUMBERS,...customTrailers].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}>#{t}</option>))}
@@ -2655,7 +2699,7 @@ ${accRows.length>0?`
                             type="text"
                             defaultValue={group.readyTime||""}
                             placeholder="e.g. 4/28 8AM"
-                            onBlur={e=>setGroup(group.id,"readyTime",e.target.value.trim())}
+                            onBlur={e=>{if(canEdit)setGroup(group.id,"readyTime",e.target.value.trim());}} disabled={!canEdit}
                             onKeyDown={e=>{if(e.key==="Enter"){setGroup(group.id,"readyTime",e.target.value.trim());e.target.blur();}}}
                             onClick={e=>e.stopPropagation()}
                             style={{flex:1,border:"none",background:"transparent",fontSize:"11px",fontWeight:"600",color:"#15803d",outline:"none",fontFamily:"inherit"}}
@@ -2735,9 +2779,10 @@ ${accRows.length>0?`
                                 .then(()=>alert("Email sent to "+emails.length+" dispatcher"+(emails.length>1?"s":"")+"!"))
                                 .catch(()=>alert("Email sent!")); // no-cors always throws but it works
                             }}
-                            style={{flex:1,background:"#059669",color:"#fff",border:"none",borderRadius:"5px",padding:"5px",fontSize:"9px",fontWeight:"700",cursor:"pointer"}}
+                            style={{flex:1,background:"#059669",color:"#fff",border:"none",borderRadius:"5px",padding:"5px",fontSize:"9px",fontWeight:"700",cursor:canEdit?"pointer":"not-allowed",opacity:canEdit?1:.5}}
+                          disabled={!canEdit}
                           >📧 Send Email</button>
-                          <button onClick={()=>setGroup(group.id,"isCombined",false)} style={{flex:1,background:"transparent",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"5px",fontSize:"9px",fontWeight:"600",color:"#64748b",cursor:"pointer"}}>← Return to Planned</button>
+                          <button onClick={()=>{if(canEdit)setGroup(group.id,"isCombined",false);}} style={{flex:1,background:"transparent",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"5px",fontSize:"9px",fontWeight:"600",color:canEdit?"#64748b":"#d1d5db",cursor:canEdit?"pointer":"not-allowed"}} disabled={!canEdit}>← Return to Planned</button>
                         </div>
                       )}
                     </div>
@@ -3758,16 +3803,56 @@ ${accRows.length>0?`
                                           style={{border:"1px solid #e2e8f0",borderRadius:"6px",padding:"5px 9px",fontSize:"11px",color:"#0f1f3d",background:"#fff",outline:"none",width:"130px",flexShrink:0,fontFamily:"inherit"}}
                                         />
                                         <button
-                                          onClick={e=>{
+                                          onClick={async e=>{
                                             e.stopPropagation();
                                             const inp=document.getElementById(`claim-${group.id}`);
                                             const name=(inp?inp.value:"").trim();
                                             if(!name){inp&&inp.focus();return;}
+                                            const btn=e.currentTarget;
+                                            btn.textContent="Saving...";btn.disabled=true;
                                             const wkIdx=weeks.findIndex(w=>(w.groups||[]).some(g=>g.id===group.id));
-                                            if(wkIdx>=0){
-                                              const updated=weeks.map((w,i)=>i!==wkIdx?w:{...w,groups:(w.groups||[]).map(g=>g.id!==group.id?g:{...g,groupDriver:name,securedBy:name,securedAt:Date.now()})});
-                                              setWeeksAndSave(updated);
-                                            }
+                                            if(wkIdx<0){btn.textContent="Claim";btn.disabled=false;return;}
+                                            const now=Date.now();
+                                            const updated=weeks.map((w,i)=>i!==wkIdx?w:{...w,groups:(w.groups||[]).map(g=>g.id!==group.id?g:{...g,groupDriver:name,securedBy:name,securedAt:now})});
+                                            // Update React state immediately
+                                            setWeeks(updated);
+                                            // Save to localStorage immediately (no debounce)
+                                            try{
+                                              const ls=latestState.current;
+                                              const payload={weeks:updated,customDrivers:ls.customDrivers||[],customTrucks:ls.customTrucks||[],customTrailers:ls.customTrailers||[],dispatchers:ls.dispatchers||[],truckAssignments:ls.truckAssignments||{},savedAt:now};
+                                              localStorage.setItem("fcbv2_localdata",JSON.stringify(payload));
+                                            }catch(ex){}
+                                            // Save to Sheets immediately (no debounce, no timer)
+                                            const url=localStorage.getItem("fcbv2_sheetsUrl")||SHEETS_URL;
+                                            const claimAdminEmail=localStorage.getItem("fcbv2_adminEmail")||adminEmail||"";
+                                            try{
+                                              const ls=latestState.current;
+                                              await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:{
+                                                action:"claimLoad",
+                                                claimerName:name,
+                                                groupId:group.id,
+                                                truckNum:group.groupTruck||"",
+                                                trailerNum:group.groupTrailer||"",
+                                                adminEmail:claimAdminEmail,
+                                                weeks:updated,
+                                                customDrivers:ls.customDrivers||[],
+                                                customTrucks:ls.customTrucks||[],
+                                                customTrailers:ls.customTrailers||[],
+                                                dispatchers:ls.dispatchers||[],
+                                                truckAssignments:ls.truckAssignments||{},
+                                                dispatcherEmails:[],
+                                                adminPin:localStorage.getItem("fcbv2_adminPin")||"",
+                                                savedAt:now
+                                              }})});
+                                            }catch(ex){}
+                                            btn.textContent="✓ Claimed!";btn.style.background="#15803d";
+                                            // Write claim notif to localStorage for same-device admin
+                                            try{
+                                              const notifs=JSON.parse(localStorage.getItem("fcbv2_claim_notifs")||"[]");
+                                              notifs.unshift({id:now,claimerName:name,groupId:group.id,truck:group.groupTruck,trailer:group.groupTrailer,ts:now});
+                                              localStorage.setItem("fcbv2_claim_notifs",JSON.stringify(notifs.slice(0,20)));
+                                              window.dispatchEvent(new StorageEvent("storage",{key:"fcbv2_claim_notifs"}));
+                                            }catch(ex){}
                                           }}
                                           style={{background:"#059669",color:"#fff",border:"none",borderRadius:"6px",padding:"5px 14px",fontSize:"11px",fontWeight:"700",cursor:"pointer",flexShrink:0}}
                                         >Claim</button>
