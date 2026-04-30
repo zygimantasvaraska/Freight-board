@@ -654,6 +654,73 @@ function App(){
     window.addEventListener("storage",onStorage);
     return()=>{clearInterval(iv);window.removeEventListener("storage",onStorage);};
   },[]);
+
+  // ── LIVE CLAIM POLL: silently re-fetch Sheets every 8s ──────────────────────
+  // Detects when another dispatcher claims a load and updates state immediately
+  // so the Claim button disappears for everyone else in real time
+  useEffect(()=>{
+    const POLL_MS = 8000; // 8 seconds
+    let pollTimer = null;
+    let isMounted = true;
+
+    const pollSheets = () => {
+      const url = localStorage.getItem("fcbv2_sheetsUrl") || SHEETS_URL;
+      if (!url) return;
+      sheetsLoad(appMode, sessionToken.current)
+        .then(data => {
+          if (!isMounted) return;
+          const serverWeeks = Array.isArray(data) ? data : (data.weeks || []);
+          const serverSavedAt = Array.isArray(data) ? 0 : (data.savedAt || 0);
+          const lastSeen = lastLoadedServerTs.current || 0;
+
+          // Only process if server has newer data than what we loaded
+          if (serverSavedAt <= lastSeen && serverSavedAt > 0) return;
+
+          // Check if any group now has a driver that didn't before (claim happened)
+          let claimDetected = false;
+          setWeeks(prevWeeks => {
+            if (!serverWeeks.length) return prevWeeks;
+            const merged = prevWeeks.map((pw, wi) => {
+              const sw = serverWeeks[wi];
+              if (!sw) return pw;
+              const mergedGroups = (pw.groups || []).map((pg, gi) => {
+                const sg = (sw.groups || [])[gi];
+                if (!sg) return pg;
+                // If server has a driver claim that local doesn't — take server version
+                const serverHasClaim = sg.groupDriver && sg.securedAt;
+                const localHasClaim  = pg.groupDriver && pg.securedAt;
+                if (serverHasClaim && !localHasClaim) {
+                  claimDetected = true;
+                  return { ...pg, groupDriver: sg.groupDriver, securedBy: sg.securedBy, securedAt: sg.securedAt };
+                }
+                // If local has a newer claim than server — keep local (don't overwrite own claim)
+                if (localHasClaim && serverHasClaim && pg.securedAt >= sg.securedAt) {
+                  return pg;
+                }
+                return pg;
+              });
+              return { ...pw, groups: mergedGroups };
+            });
+            return merged;
+          });
+
+          // Update timestamp so we don't re-process same data
+          if (serverSavedAt > 0) lastLoadedServerTs.current = serverSavedAt;
+        })
+        .catch(() => {}); // Silent fail — don't disrupt UX on network error
+    };
+
+    // Start polling after a short delay (let initial load settle)
+    const startDelay = setTimeout(() => {
+      pollTimer = setInterval(pollSheets, POLL_MS);
+    }, 3000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(startDelay);
+      if (pollTimer) clearInterval(pollTimer);
+    };
+  }, [appMode]);
   const[archivedWeeks,setArchivedWeeks]=useState(()=>{try{return JSON.parse(localStorage.getItem("fcbv2_archive")||"[]");}catch{return[];}});
   const[customDrivers,setCustomDrivers]=useState([]);
   const[customTrucks,setCustomTrucks]=useState([]);
@@ -3860,6 +3927,8 @@ ${accRows.length>0?`
                                               }})});
                                             }catch(ex){}
                                             btn.textContent="✓ Claimed!";btn.style.background="#15803d";
+                                            // Mark local savedAt so our own poll skips re-processing our own claim
+                                            lastLoadedServerTs.current = now;
                                             // Write claim notif to localStorage for same-device admin
                                             try{
                                               const notifs=JSON.parse(localStorage.getItem("fcbv2_claim_notifs")||"[]");
