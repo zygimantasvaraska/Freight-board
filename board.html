@@ -86,6 +86,7 @@ function zipMiles(sr){
 
 
 const XDOCK_ADDRESSES=[{city:"Jacksonville, FL",addr:"680 Edgewood Ave N Suite B, Jacksonville, FL 32254",contact:"Tom / 904-870-3566",price:"$8.50/pallet + $100 afterhours"},{city:"Orlando, FL",addr:"9633 Oak Crossing Road #400, Orlando, FL 32837",contact:"Tom / 904-870-3566",price:"$8.50/pallet + $100 afterhours"},{city:"Savannah, GA",addr:"780 King George Blvd Unit 3, Savannah, GA 31419",contact:"Tom / 904-870-3566",price:"$8.50/pallet + $100 afterhours"},{city:"Suwanee, GA",addr:"Rick Cargo, 300 Brogdon Rd STE 110, Suwanee, GA 30024",contact:"Dalton 949-444-3804 / Steven 949-309-0938",price:"$10/pallet + $100 afterhours"},{city:"Albany, GA",addr:"1901 Krug Street, Albany, GA 31705",contact:"229-888-7980",price:"$250/trailer — cash only"},{city:"East Point, GA",addr:"2251 Sylvan Road Suite 500, East Point, GA 30344",contact:"404-607-8457",price:"$450/trailer"},{city:"Birmingham, AL",addr:"Axis Warehousing, 4280 Pinson Valley Pkwy, Birmingham, AL 35215",contact:"205-263-0473",price:"$10/pallet"},{city:"Decatur, AL",addr:"KMS Express, 41 Ipsco Street, Decatur, AL 35601",contact:"Mike / 256-213-1919",price:"$8/pallet, $100 afterhours, no long forks"},{city:"Decatur, AL (State Bonded)",addr:"State Bonded Warehouse, 26 2nd St SW, Decatur, AL 35601",contact:"Jerry / 256-353-9361",price:"$20/pallet — long forks"},{city:"Chattanooga, TN",addr:"3500 North Hawthorne St Suite 161, Chattanooga, TN 37406",contact:"Serge / 423-310-0487",price:"$6/pallet, $150 afterhours"},{city:"Summerville, SC",addr:"168 Portside Park Dr Suite #300, Summerville, SC 29483",contact:"843-203-9200",price:""},{city:"Mebane, NC",addr:"Superior Logistics, 2267 US-70, Mebane, NC 27302",contact:"John / 336-269-8339",price:"$10/pallet, $100 afterhours"},{city:"Inman, SC",addr:"Z Brothers, 60 Indy Lane, Inman, SC 29349",contact:"Vasili / 716-308-8841",price:"$8/pallet, $50 afterhours"},{city:"Hartford, CT",addr:"RJ Morris, 1 Fairfield Street, E Hartford, CT 06108",contact:"Jeff / 860-841-2923",price:"$10/pallet, $100 afterhours"},{city:"Grand Prairie, TX",addr:"JTS, 2555 114th Street, Grand Prairie, TX",contact:"469-916-4480",price:"$10/pallet, $100 afterhours"},{city:"Richmond, VA",addr:"Dominion, 1501 Carter Creek Road, Richmond, VA 23224",contact:"Travis / 804-335-4562",price:"$125 minimum"},{city:"Knoxville, TN",addr:"Warehouse Foothills Brokerage, 2301 Texas Ave, Knoxville, TN 37921",contact:"Kenny / 865-585-5457",price:""},{city:"Glen Burnie, MD",addr:"806 Cromwell Park Drive, Glen Burnie, MD 21061",contact:"Shawn / 443-546-7264",price:"$10/pallet"},{city:"Baton Rouge, LA",addr:"TTH Warehouse, 2276 N 3rd Street, Baton Rouge, LA 70802",contact:"Nancy 225-772-2931",price:"~$160 for 25 pallets"},{city:"Sturtevant, WI",addr:"11201 Enterprise Way, Sturtevant, WI",contact:"Joe 414-534-0610",price:"$14/pallet"},{city:"Crossville, TN",addr:"228 Interstate Drive, Crossville, TN 38555",contact:"Oliver 931-839-2220",price:"$250 whole trailer — open 5:30AM"}];
+(function(){try{var stored=localStorage.getItem("fcbv2_xdrop_partners");if(stored){XDOCK_ADDRESSES=JSON.parse(stored);}}catch(e){}})();
 
 
 
@@ -620,6 +621,14 @@ function App(){
   const[dispatcherEmails,setDispatcherEmails]=useState(()=>{try{return JSON.parse(localStorage.getItem("fcbv2_disp_emails")||"[]");}catch{return[];}});
   const[adminEmail,setAdminEmail]=useState(()=>localStorage.getItem("fcbv2_adminEmail")||"");
   const[activeSideTab,setActiveSideTab]=useState(null);
+  const[collapsedOtrIds,setCollapsedOtrIds]=useState({});
+  const[xdropPartners,setXdropPartners]=useState(()=>{try{var s=localStorage.getItem("fcbv2_xdrop_partners");return s?JSON.parse(s):XDOCK_ADDRESSES;}catch(e){return XDOCK_ADDRESSES;}});
+  const[showXdropPartnersModal,setShowXdropPartnersModal]=useState(false);
+  const[xdropEditIdx,setXdropEditIdx]=useState(null);
+  const[xdropEditVal,setXdropEditVal]=useState({city:"",addr:"",contact:"",price:""});
+  const[xdropAddMode,setXdropAddMode]=useState(false);
+  const[xdropNewVal,setXdropNewVal]=useState({city:"",addr:"",contact:"",price:""});
+  const saveXdropPartners=(list)=>{setXdropPartners(list);try{localStorage.setItem("fcbv2_xdrop_partners",JSON.stringify(list));}catch(e){}};
   const[crossdockLocations,setCrossdockLocations]=useState(()=>{try{return JSON.parse(localStorage.getItem("fcbv2_xdrop_locs")||"[]");}catch{return[];}});
   const[showXdropLocModal,setShowXdropLocModal]=useState(false);
   const[newXdropLoc,setNewXdropLoc]=useState("");
@@ -2122,60 +2131,7 @@ ${accRows.length>0?`
         </div>
       </div>
 
-      {/* F3: LEADERBOARD PANEL */}
-      {isAdmin&&(<div style={{borderTop:"1px solid #1a3a6a"}}>
-        <div onClick={()=>setShowLeaderboard(v=>!v)} style={{background:"#0a1628",padding:"5px 16px",display:"flex",alignItems:"center",gap:"8px",cursor:"pointer",userSelect:"none"}}>
-          <span style={{fontSize:"11px",color:"rgba(255,255,255,0.35)"}}>{showLeaderboard?"▼":"▶"}</span>
-          <span style={{fontSize:"11px",fontWeight:"700",color:"rgba(255,255,255,0.55)"}}>🏆 Leaderboard</span>
-          {!showLeaderboard&&(()=>{
-            const topD=Object.entries(
-              (weeks||[]).flatMap(w=>(w.groups||[])).filter(g=>g.groupStatus==="Delivered"&&g.groupDriver)
-                   .reduce((acc,g)=>{const d=g.groupDriver;acc[d]=(acc[d]||0)+(g.loads||[]).reduce((s,l)=>s+(parseFloat(l.rate)||0),0);return acc;},{})
-            ).sort((a,b)=>b[1]-a[1]).slice(0,3);
-            return topD.length>0&&<span style={{fontSize:"10px",color:"rgba(255,255,255,0.35)",marginLeft:"4px"}}>{topD.map((d,i)=>`${i===0?"🥇":i===1?"🥈":"🥉"} ${d[0].split(" ")[0]}`).join("  ")}</span>;
-          })()}
-        </div>
-        {showLeaderboard&&(()=>{
-          const LOCAL_DRV_LB=new Set(["Linas Greiciunas","Theron Mack","John Johnson","Douglas Russo","Emilis Ibianskas","Egidijus Matulis","Oleh Lashkevych"]);
-          const drvGross={};
-          const drvLoads={};
-          const drvTrailers={};
-          weeks.forEach(w=>{
-            (w.groups||[]).forEach(g=>{
-              const d=(g.groupDriver||"").trim();
-              if(!d||LOCAL_DRV_LB.has(d))return;
-              if(g.groupStatus!=="Delivered")return;
-              const gross=(g.loads||[]).reduce((s,l)=>s+(parseFloat(l.rate)||0),0);
-              const lc=(g.loads||[]).length;
-              drvGross[d]=(drvGross[d]||0)+gross;
-              drvLoads[d]=(drvLoads[d]||0)+lc;
-              drvTrailers[d]=(drvTrailers[d]||0)+1;
-            });
-          });
-          const top=Object.entries(drvGross).sort((a,b)=>b[1]-a[1]).slice(0,10);
-          const maxGross=top[0]?top[0][1]:1;
-          const medals=["🥇","🥈","🥉"];
-          return top.length===0
-            ? <div style={{padding:"10px 16px",fontSize:"11px",color:"rgba(255,255,255,0.35)"}}>No delivered loads yet</div>
-            : <div style={{padding:"8px 16px 12px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"6px"}}>
-                {top.map((entry,i)=>(
-                  <div key={entry[0]} style={{display:"flex",alignItems:"center",gap:"8px",background:"rgba(255,255,255,0.04)",borderRadius:"7px",padding:"6px 10px"}}>
-                    <span style={{fontSize:"14px",width:"22px",textAlign:"center",flexShrink:0}}>{medals[i]||"#"+(i+1)}</span>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:"12px",fontWeight:"700",color:"#0f1f3d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{entry[0]}</div>
-                      <div style={{fontSize:"10px",color:"rgba(255,255,255,0.4)"}}>{drvTrailers[entry[0]]} trailers · {drvLoads[entry[0]]} loads</div>
-                    </div>
-                    <div style={{flexShrink:0,textAlign:"right"}}>
-                      <div style={{fontSize:"12px",fontWeight:"800",color:"#86efac"}}>${entry[1].toLocaleString()}</div>
-                      <div style={{width:"70px",height:"4px",background:"rgba(255,255,255,0.1)",borderRadius:"2px",marginTop:"3px"}}>
-                        <div style={{height:"100%",width:Math.round(entry[1]/maxGross*100)+"%",background:i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#d97706":"#34d399",borderRadius:"2px"}}/>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>;
-        })()}
-      </div>)}
+      
 
       {/* SECTION TABS */}
       <div style={{display:"flex",gap:"0",background:"#0d1a30",borderBottom:"2px solid #1a2e50",overflowX:"auto",flexShrink:0}}>
@@ -2259,9 +2215,12 @@ ${accRows.length>0?`
                   return(
                     <div key={group.id} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:"10px",overflow:"hidden",marginBottom:"7px",borderLeft:`3px solid ${ss.lbdr}`,boxShadow:"0 1px 3px rgba(0,0,0,.06)"}}>
                       {/* Card header — dark banner like Combined */}
-                      <div style={{background:"#0f1f3d",padding:"9px 14px",display:"flex",flexDirection:"column",gap:"6px"}}>
+                      <div
+                        onClick={e=>{if(!e.target.closest('select')){setCollapsedOtrIds(p=>({...p,[group.id]:!p[group.id]}));}}}
+                        style={{background:"#0f1f3d",padding:"9px 14px",display:"flex",flexDirection:"column",gap:"6px",cursor:"pointer",userSelect:"none"}}>
                         {/* Row 1: Truck, Trailer, Driver, Net */}
                         <div style={{display:"flex",alignItems:"center",gap:"7px",flexWrap:"nowrap"}}>
+                          <span style={{fontSize:"9px",color:"rgba(255,255,255,.3)",flexShrink:0,lineHeight:1}}>{collapsedOtrIds[group.id]?"▶":"▼"}</span>
                           {group.groupTruck&&<span style={{fontSize:"12px",fontWeight:"800",color:"#fff",background:"rgba(255,255,255,.12)",padding:"2px 8px",borderRadius:"4px",flexShrink:0}}>#{group.groupTruck}</span>}
                           {group.groupTrailer&&<span style={{fontSize:"12px",fontWeight:"800",color:"#c4b5fd",background:"rgba(167,139,250,.15)",padding:"2px 8px",borderRadius:"4px",flexShrink:0}}>T{group.groupTrailer}</span>}
                           <span style={{fontSize:"13px",fontWeight:"700",color:"#86efac",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{group.groupDriver||<span style={{color:"rgba(255,255,255,.35)",fontStyle:"italic",fontWeight:"400"}}>No driver assigned</span>}</span>
@@ -2279,8 +2238,8 @@ ${accRows.length>0?`
                         </div>
                       </div>
 
-                      {/* Load rows — compact like Combined collapsed rows */}
-                      {loads.map((load,li)=>{
+                      {/* Load rows — collapsible, show load# */}
+                      {!collapsedOtrIds[group.id]&&loads.map((load,li)=>{
                         const lrc=rowColor(load,today,tomorrow);
                         const sr=parseSR(load.sr||"");
                         const showBroker=canSeeBroker(group,load);
@@ -2289,7 +2248,10 @@ ${accRows.length>0?`
                           <div key={load.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 12px",borderTop:"1px solid #f1f5f9",flexWrap:"nowrap"}}>
                             <span style={{width:"15px",height:"15px",borderRadius:"50%",background:lrc.barBg,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:"8px",fontWeight:"800",color:lrc.tc,flexShrink:0}}>{li+1}</span>
                             <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:"10px",color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sr.s||""}</div>
+                              <div style={{display:"flex",alignItems:"center",gap:"4px",marginBottom:"1px"}}>
+                                <div style={{fontSize:"10px",color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{sr.s||""}</div>
+                                {load.loadNum&&<span style={{fontSize:"8px",fontWeight:"700",color:"#7c3aed",background:"#ede9fe",padding:"1px 5px",borderRadius:"3px",flexShrink:0,whiteSpace:"nowrap"}}>#{load.loadNum}</span>}
+                              </div>
                               <div style={{fontSize:"11px",fontWeight:"600",color:"#0f1f3d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>→ {sr.r||sr.s||"—"}</div>
                             </div>
                             {load.delivery&&<span style={{fontSize:"9px",color:"#64748b",whiteSpace:"nowrap",flexShrink:0}}>📦 {load.delivery}</span>}
@@ -2326,7 +2288,7 @@ ${accRows.length>0?`
             <div key={row.id} style={{background:"#fff",border:`1px solid ${sp.bd}`,borderRadius:"10px",overflow:"hidden",borderLeft:`3px solid ${sp.bd}`,boxShadow:"0 1px 3px rgba(0,0,0,.06)",opacity:isDone?.65:1}}>
               <div style={{background:"#065f46",padding:"7px 12px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
                 {row.trailer&&<span style={{fontSize:"11px",fontWeight:"800",color:"#fff",background:"rgba(255,255,255,.12)",padding:"2px 7px",borderRadius:"4px"}}>T{row.trailer}</span>}
-                {row.truck&&<span style={{fontSize:"11px",fontWeight:"700",color:"#6ee7b7",background:"rgba(110,231,183,.1)",padding:"2px 7px",borderRadius:"4px"}}>#{row.truck}</span>}
+                {row.truck&&<span style={{fontSize:"10px",fontWeight:"700",color:"#6ee7b7",background:"rgba(110,231,183,.15)",padding:"2px 7px",borderRadius:"4px"}}>#{row.truck}{row.driver?` · ${row.driver.split(" ")[0]}`:""}</span>}
                 <span style={{fontSize:"12px",fontWeight:"700",color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{row.destination||<span style={{opacity:.4,fontStyle:"italic",fontWeight:"400"}}>No destination</span>}</span>
                 {row.carriedFrom&&<span style={{fontSize:"8px",color:"#6ee7b7",background:"rgba(110,231,183,.15)",padding:"1px 5px",borderRadius:"3px",whiteSpace:"nowrap"}}>&#8617; carried</span>}
                 <select value={row.status||""} onChange={e=>updSub("localDeliveries",row.id,"status",e.target.value)} style={{fontSize:"9px",fontWeight:"700",padding:"2px 4px",borderRadius:"4px",border:`1px solid ${sp.bd}`,background:sp.bg,color:sp.c,cursor:"pointer",outline:"none",maxWidth:"100px"}} disabled={isViewer}>
@@ -2341,8 +2303,29 @@ ${accRows.length>0?`
                 <input value={row.loadNum||""} onChange={e=>updSub("localDeliveries",row.id,"loadNum",e.target.value)} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"3px 6px",fontSize:"11px",background:"#f8fafc",outline:"none"}} placeholder="Load #" disabled={isViewer}/></div>
                 <div><div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",marginBottom:"2px"}}>Date / Time</div>
                 <input value={row.datetime||""} onChange={e=>updSub("localDeliveries",row.id,"datetime",e.target.value)} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"3px 6px",fontSize:"11px",background:"#f8fafc",outline:"none"}} placeholder="3/31 8AM" disabled={!isAdmin}/></div>
-                <div><div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",marginBottom:"2px"}}>Driver</div>
-                <input value={row.driver||""} onChange={e=>updSub("localDeliveries",row.id,"driver",e.target.value)} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"3px 6px",fontSize:"11px",background:"#f8fafc",outline:"none"}} placeholder="Driver" disabled={isViewer}/></div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",marginBottom:"2px"}}>Truck + Driver</div>
+                  <select
+                    value={row.truck||""}
+                    onChange={e=>{
+                      const tk=e.target.value;
+                      updSub("localDeliveries",row.id,"truck",tk);
+                      if(tk&&truckAssignments[tk]){updSub("localDeliveries",row.id,"driver",truckAssignments[tk]);}
+                      else if(!tk){updSub("localDeliveries",row.id,"driver","");}
+                    }}
+                    style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"4px 6px",fontSize:"11px",background:"#f8fafc",outline:"none",fontFamily:"inherit"}}
+                    disabled={isViewer}
+                  >
+                    <option value="">— select truck + driver —</option>
+                    {allTrucks.map(t=>(
+                      <option key={t} value={t}>
+                        {truckAssignments[t]?`Truck #${t} — ${truckAssignments[t]}`:`Truck #${t} (no driver assigned)`}
+                      </option>
+                    ))}
+                  </select>
+                  {row.truck&&row.driver&&<div style={{fontSize:"10px",color:"#059669",marginTop:"3px",fontWeight:"600"}}>✓ {row.driver}</div>}
+                  {row.truck&&!row.driver&&<div style={{fontSize:"10px",color:"#f59e0b",marginTop:"3px"}}>No driver assigned to this truck</div>}
+                </div>
                 {row.amount?<div><div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",marginBottom:"2px"}}>Amount</div><div style={{fontSize:"13px",fontWeight:"800",color:"#059669"}}>${parseFloat(row.amount||0).toLocaleString()}</div></div>:null}
                 <div style={{gridColumn:"1/-1"}}><div style={{fontSize:"9px",color:"#94a3b8",fontWeight:"700",textTransform:"uppercase",marginBottom:"2px"}}>Notes</div>
                 <input value={row.notes||""} onChange={e=>updSub("localDeliveries",row.id,"notes",e.target.value)} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"3px 6px",fontSize:"11px",background:"#f8fafc",outline:"none"}} placeholder="Notes" disabled={isViewer}/></div>
@@ -2573,12 +2556,7 @@ ${accRows.length>0?`
                       )}
                     </div>
                   )}
-                  {isAdmin&&!hasDriver&&<div style={{display:"flex",alignItems:"center",gap:"3px",flexShrink:0}} onClick={e=>e.stopPropagation()}>
-                    <select value={group.groupDriver||""} onChange={e=>{if(canEdit)setGroup(group.id,"groupDriver",e.target.value);}} disabled={!canEdit} style={{border:"1px solid rgba(134,239,172,.3)",borderRadius:"4px",background:"rgba(0,0,0,.3)",color:"#86efac",fontSize:"9px",fontWeight:"600",padding:"1px 4px",cursor:"pointer",outline:"none",maxWidth:"110px"}}>
-                      <option value="" style={{background:"#1e3a5f",color:"#fff"}}>— OTR Driver —</option>
-                      {[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d} style={{background:"#1e3a5f",color:"#fff"}}>{d}</option>))}
-                    </select>
-                  </div>}
+                  
                   {isAdmin&&<button onClick={()=>setGroup(group.id,"isCombined",true)} style={{background:"rgba(124,58,237,.3)",color:"#c4b5fd",border:"1px solid rgba(124,58,237,.5)",borderRadius:"4px",padding:"1px 6px",fontSize:"9px",fontWeight:"700",cursor:"pointer",flexShrink:0}}>→ Combined</button>}
                   {isAdmin&&<input value={group.groupNotes||""} onChange={e=>setGroup(group.id,"groupNotes",e.target.value)} placeholder="Notes..." style={{background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.1)",borderRadius:"4px",padding:"1px 5px",fontSize:"9px",color:"#e2e8f0",width:"100px",minWidth:"40px"}}/>}
                   {isAdmin&&week.groups.length>1&&<button onClick={()=>{if(window.confirm("Remove this trailer and all its loads?"))removeGroup(group.id);}} style={{background:"#7f1d1d",color:"#fca5a5",border:"1px solid #dc2626",borderRadius:"4px",padding:"1px 6px",fontSize:"9px",fontWeight:"700",cursor:"pointer",flexShrink:0}}>✕</button>}
@@ -2664,55 +2642,48 @@ ${accRows.length>0?`
                           {isAdmin?<input key={load.id+"pal"} defaultValue={load.pallets} onBlur={e=>{if(e.target.value!==load.pallets)setLoad(group.id,load.id,"pallets",e.target.value);}} onClick={e=>e.stopPropagation()} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"12px",color:"#374151",padding:"2px 4px",outline:"none",fontFamily:"inherit",textAlign:"center"}} placeholder="—"/>:load.pallets||"—"}
                         </span>
 
-                        {/* Local Truck — own column, searchable via datalist */}
-                        <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
+                        {/* Local Truck — controlled select, auto-fills driver */}
+                        <div style={{minWidth:0,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
                           {isAdmin?(
-                            <>
-                              <input
-                                key={`ltruck-${load.id}-${load.localTruck||""}`}
-                                list={`ltruck-${load.id}`}
-                                defaultValue={load.localTruck||""}
-                                onBlur={e=>{
-                                  const val=e.target.value.trim();
-                                  const allTrucks=[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i);
-                                  const matched=allTrucks.find(t=>t===val||"#"+t===val);
-                                  const final=matched||val;
-                                  if(final!==load.localTruck){
-                                    setLoad(group.id,load.id,"localTruck",final);
-                                    // Auto-assign local driver from truck assignments
-                                    if(final&&truckAssignments[final]&&!load.driver){
-                                      setLoad(group.id,load.id,"driver",truckAssignments[final]);
-                                    }
-                                    trackField("localTruck");
-                                  }
-                                }}
-                                placeholder="Search truck..."
-                                style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",color:"#374151",padding:"2px 4px",outline:"none",fontFamily:"inherit"}}
-                              />
-                              <datalist id={`ltruck-${load.id}`}>
-                                {[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}/>))}
-                              </datalist>
-                            </>
+                            <select
+                              value={load.localTruck||""}
+                              onChange={e=>{
+                                const tk=e.target.value;
+                                const drv=tk?truckAssignments[tk]||"":"";
+                                const curSt=load.status||"";
+                                const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
+                                const updates={localTruck:tk,driver:drv};
+                                if(drv&&!furtherSt.includes(curSt))updates.status="Dispatched";
+                                setLoadFields(group.id,load.id,updates);
+                                trackField("localTruck");
+                              }}
+                              style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",color:load.localTruck?"#374151":"#94a3b8",padding:"2px 2px",outline:"none",fontFamily:"inherit",cursor:"pointer"}}
+                            >
+                              <option value="">—</option>
+                              {allTrucks.map(t=>(<option key={t} value={t}>#{t}</option>))}
+                            </select>
                           ):<span style={{fontSize:"11px",color:load.localTruck?"#374151":"#94a3b8"}}>{load.localTruck?"#"+load.localTruck:"—"}</span>}
                         </div>
-                        {/* Local Driver — own column */}
-                        <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
-                          {isAdmin
-                            ?<select value={localDriver} onChange={e=>{
-                              const newDriver=e.target.value;
-                              const curSt=load.status||"";
-                              // Auto-set Dispatched when driver assigned, unless already a further status
-                              const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
-                              const shouldAutoDispatch=newDriver&&!furtherSt.includes(curSt);
-                              const updates={driver:newDriver};
-                              if(shouldAutoDispatch)updates.status="Dispatched";
-                              setLoadFields(group.id,load.id,updates);
-                              trackField("driver");
-                            }} style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",fontStyle:"italic",color:localDriver?"#374151":"#94a3b8",padding:"2px 4px",outline:"none",fontFamily:"inherit",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              <option value="">— Driver —</option>{[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}
+                        {/* Local Driver — shows auto-filled name, editable override */}
+                        <div style={{minWidth:0,overflow:"hidden"}} onClick={e=>e.stopPropagation()}>
+                          {isAdmin?(
+                            <select
+                              value={load.driver||""}
+                              onChange={e=>{
+                                const newDriver=e.target.value;
+                                const curSt=load.status||"";
+                                const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
+                                const updates={driver:newDriver};
+                                if(newDriver&&!furtherSt.includes(curSt))updates.status="Dispatched";
+                                setLoadFields(group.id,load.id,updates);
+                                trackField("driver");
+                              }}
+                              style={{width:"100%",border:"1px solid #e2e8f0",borderRadius:"4px",background:"#f8fafc",fontSize:"11px",fontStyle:"italic",color:load.driver?"#374151":"#94a3b8",padding:"2px 2px",outline:"none",fontFamily:"inherit",cursor:"pointer",overflow:"hidden",textOverflow:"ellipsis"}}
+                            >
+                              <option value="">—</option>
+                              {[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}
                             </select>
-                            :<div style={{fontSize:"11px",fontStyle:"italic",color:localDriver?"#374151":"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{localDriver||"—"}</div>
-                          }
+                          ):<div style={{fontSize:"11px",fontStyle:"italic",color:load.driver?"#374151":"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{load.driver||"—"}</div>}
                         </div>
                         {/* Local Trailer — own column, searchable via datalist */}
                         <div style={{minWidth:0}} onClick={e=>e.stopPropagation()}>
@@ -3076,15 +3047,34 @@ ${accRows.length>0?`
                                 </div>
                                 {/* Local driver + truck */}
                                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 10px",marginBottom:"8px",padding:"6px 8px",background:"rgba(255,255,255,.7)",border:"1px solid #bfdbfe",borderRadius:"5px"}}>
-                                  <div><div style={{fontSize:"8px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"2px"}}>Local Driver</div>
-                                    {isAdmin?<select value={l.driver||""} onChange={e=>{setLoad(group.id,l.id,"driver",e.target.value);trackField("driver");}} style={{width:"100%",border:"none",borderBottom:"1px solid #bfdbfe",background:"transparent",fontSize:"11px",fontStyle:"italic",color:l.driver?"#374151":"#94a3b8",outline:"none",fontFamily:"inherit",cursor:"pointer"}}>
-                                      <option value="">— Assign —</option>{[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}
-                                    </select>:<div style={{fontSize:"11px",fontStyle:"italic",color:l.driver?"#374151":"#94a3b8"}}>{l.driver||"—"}</div>}
-                                  </div>
                                   <div><div style={{fontSize:"8px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"2px"}}>Local Truck</div>
-                                    {isAdmin?<select value={l.localTruck||""} onChange={e=>{setLoad(group.id,l.id,"localTruck",e.target.value);trackField("localTruck");}} style={{width:"100%",border:"none",borderBottom:"1px solid #bfdbfe",background:"transparent",fontSize:"11px",color:l.localTruck?"#374151":"#94a3b8",outline:"none",fontFamily:"inherit",cursor:"pointer"}}>
-                                      <option value="">-- Truck --</option>{[...TRUCK_NUMBERS,...customTrucks].filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(t=>(<option key={t} value={t}>#{t}</option>))}
+                                    {isAdmin?<select value={l.localTruck||""} onChange={e=>{
+                                      const tk=e.target.value;
+                                      const drv=tk?truckAssignments[tk]||"":"";
+                                      const curSt=l.status||"";
+                                      const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
+                                      const updates={localTruck:tk,driver:drv};
+                                      if(drv&&!furtherSt.includes(curSt))updates.status="Dispatched";
+                                      setLoadFields(group.id,l.id,updates);
+                                      trackField("localTruck");
+                                    }} style={{width:"100%",border:"none",borderBottom:"1px solid #bfdbfe",background:"transparent",fontSize:"11px",color:l.localTruck?"#374151":"#94a3b8",outline:"none",fontFamily:"inherit",cursor:"pointer"}}>
+                                      <option value="">-- Truck --</option>
+                                      {allTrucks.map(t=>(<option key={t} value={t}>#{t}</option>))}
                                     </select>:<div style={{fontSize:"11px",color:l.localTruck?"#374151":"#94a3b8"}}>{l.localTruck?"#"+l.localTruck:"—"}</div>}
+                                  </div>
+                                  <div><div style={{fontSize:"8px",fontWeight:"600",color:"#64748b",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"2px"}}>Local Driver</div>
+                                    {isAdmin?<select value={l.driver||""} onChange={e=>{
+                                      const newDriver=e.target.value;
+                                      const curSt=l.status||"";
+                                      const furtherSt=["Dispatched","Dock","Yard","Picked Up","In Transit","Loaded","Delivered"];
+                                      const updates={driver:newDriver};
+                                      if(newDriver&&!furtherSt.includes(curSt))updates.status="Dispatched";
+                                      setLoadFields(group.id,l.id,updates);
+                                      trackField("driver");
+                                    }} style={{width:"100%",border:"none",borderBottom:"1px solid #bfdbfe",background:"transparent",fontSize:"11px",fontStyle:"italic",color:l.driver?"#374151":"#94a3b8",outline:"none",fontFamily:"inherit",cursor:"pointer"}}>
+                                      <option value="">— Driver —</option>
+                                      {[...DRIVERS,...customDrivers].sort().map(d=>(<option key={d} value={d}>{d}</option>))}
+                                    </select>:<div style={{fontSize:"11px",fontStyle:"italic",color:l.driver?"#374151":"#94a3b8"}}>{l.driver||"—"}</div>}
                                   </div>
                                 </div>
                                 {/* Quick status buttons */}
@@ -3262,8 +3252,8 @@ ${accRows.length>0?`
                         </div>
                       </div>
 
-                      {/* Load rows — compact like Combined collapsed rows */}
-                      {loads.map((load,li)=>{
+                      {/* Load rows — collapsible */}
+                      {!collapsedOtrIds[group.id]&&loads.map((load,li)=>{
                         const lrc=rowColor(load,today,tomorrow);
                         const sr=parseSR(load.sr||"");
                         const showBroker=canSeeBroker(group,load);
@@ -3272,7 +3262,10 @@ ${accRows.length>0?`
                           <div key={load.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 12px",borderTop:"1px solid #f1f5f9",flexWrap:"nowrap"}}>
                             <span style={{width:"15px",height:"15px",borderRadius:"50%",background:lrc.barBg,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:"8px",fontWeight:"800",color:lrc.tc,flexShrink:0}}>{li+1}</span>
                             <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:"10px",color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sr.s||""}</div>
+                              <div style={{display:"flex",alignItems:"center",gap:"4px",marginBottom:"1px"}}>
+                                <div style={{fontSize:"10px",color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{sr.s||""}</div>
+                                {load.loadNum&&<span style={{fontSize:"8px",fontWeight:"700",color:"#7c3aed",background:"#ede9fe",padding:"1px 5px",borderRadius:"3px",flexShrink:0,whiteSpace:"nowrap"}}>#{load.loadNum}</span>}
+                              </div>
                               <div style={{fontSize:"11px",fontWeight:"600",color:"#0f1f3d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>→ {sr.r||sr.s||"—"}</div>
                             </div>
                             {load.delivery&&<span style={{fontSize:"9px",color:"#64748b",whiteSpace:"nowrap",flexShrink:0}}>📦 {load.delivery}</span>}
@@ -3833,7 +3826,77 @@ ${accRows.length>0?`
   )}
 
     {/* CROSSDOCK ADDRESSES TAB */}
-    {activeTab==="xdock"&&(isAdmin||isDispatcher)&&(<div style={{background:"#fff",border:"1px solid #d1d5db",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"20px"}}><div style={{fontWeight:"700",fontSize:"14px",color:"#1a2e50",marginBottom:"16px"}}>🔁 Crossdock Partner Locations</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:"10px"}}>{XDOCK_ADDRESSES.map((x,i)=>(<div key={i} style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:"10px",padding:"12px 14px"}}><div style={{fontWeight:"700",color:"#1a2e50",fontSize:"13px",marginBottom:"4px"}}>{x.city}</div><div style={{color:"#475569",fontSize:"11px",marginBottom:"3px"}}>{x.addr}</div><div style={{color:"#059669",fontWeight:"600",fontSize:"11px"}}>{x.contact}</div>{x.price&&<div style={{color:"#d97706",fontWeight:"600",fontSize:"10px",marginTop:"3px"}}>{x.price}</div>}</div>))}</div></div>)}
+    {activeTab==="xdock"&&(isAdmin||isDispatcher)&&(
+    <div style={{background:"#fff",border:"1px solid #d1d5db",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"20px"}}>
+
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
+        <div style={{fontWeight:"700",fontSize:"14px",color:"#1a2e50"}}>🔁 Crossdock Partner Locations
+          <span style={{marginLeft:"8px",fontSize:"11px",fontWeight:"400",color:"#94a3b8"}}>{xdropPartners.length} locations</span>
+        </div>
+        {isAdmin&&(
+          <div style={{display:"flex",gap:"6px"}}>
+            <button onClick={()=>{setXdropAddMode(true);setXdropNewVal({city:"",addr:"",contact:"",price:""}); }} style={{background:"#7c3aed",color:"#fff",border:"none",borderRadius:"7px",padding:"7px 14px",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>+ Add Location</button>
+          </div>
+        )}
+      </div>
+
+      {/* Add new location form */}
+      {isAdmin&&xdropAddMode&&(
+        <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:"10px",padding:"14px",marginBottom:"16px"}}>
+          <div style={{fontSize:"12px",fontWeight:"700",color:"#5b21b6",marginBottom:"10px"}}>New Partner Location</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+            <input placeholder="City / Name (e.g. Jacksonville, FL)" value={xdropNewVal.city} onChange={e=>setXdropNewVal(v=>({...v,city:e.target.value}))} style={{border:"1px solid #ddd6fe",borderRadius:"6px",padding:"7px 10px",fontSize:"12px",outline:"none",fontFamily:"inherit"}}/>
+            <input placeholder="Contact (name / phone)" value={xdropNewVal.contact} onChange={e=>setXdropNewVal(v=>({...v,contact:e.target.value}))} style={{border:"1px solid #ddd6fe",borderRadius:"6px",padding:"7px 10px",fontSize:"12px",outline:"none",fontFamily:"inherit"}}/>
+            <input placeholder="Address" value={xdropNewVal.addr} onChange={e=>setXdropNewVal(v=>({...v,addr:e.target.value}))} style={{border:"1px solid #ddd6fe",borderRadius:"6px",padding:"7px 10px",fontSize:"12px",outline:"none",fontFamily:"inherit",gridColumn:"1/-1"}}/>
+            <input placeholder="Pricing (e.g. $10/pallet, $100 afterhours)" value={xdropNewVal.price} onChange={e=>setXdropNewVal(v=>({...v,price:e.target.value}))} style={{border:"1px solid #ddd6fe",borderRadius:"6px",padding:"7px 10px",fontSize:"12px",outline:"none",fontFamily:"inherit",gridColumn:"1/-1"}}/>
+          </div>
+          <div style={{display:"flex",gap:"6px"}}>
+            <button onClick={()=>{if(!xdropNewVal.city.trim())return;saveXdropPartners([...xdropPartners,{...xdropNewVal}]);setXdropAddMode(false);setXdropNewVal({city:"",addr:"",contact:"",price:""}); }} style={{background:"#7c3aed",color:"#fff",border:"none",borderRadius:"6px",padding:"6px 16px",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>Save</button>
+            <button onClick={()=>{setXdropAddMode(false);setXdropNewVal({city:"",addr:"",contact:"",price:""});}} style={{background:"transparent",color:"#64748b",border:"1px solid #e2e8f0",borderRadius:"6px",padding:"6px 12px",fontSize:"12px",cursor:"pointer"}}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Locations grid */}
+      {xdropPartners.length===0&&(
+        <div style={{textAlign:"center",padding:"40px",color:"#9ca3af",fontSize:"13px",border:"2px dashed #e2e8f0",borderRadius:"10px"}}>No partner locations yet. Click + Add Location to get started.</div>
+      )}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:"10px"}}>
+        {xdropPartners.map((x,i)=>(
+          <div key={i} style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:"10px",padding:"12px 14px",position:"relative"}}>
+            {xdropEditIdx===i?(
+              <div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px",marginBottom:"8px"}}>
+                  <input value={xdropEditVal.city} onChange={e=>setXdropEditVal(v=>({...v,city:e.target.value}))} placeholder="City / Name" style={{border:"1px solid #c4b5fd",borderRadius:"5px",padding:"5px 8px",fontSize:"12px",outline:"none",fontFamily:"inherit"}}/>
+                  <input value={xdropEditVal.contact} onChange={e=>setXdropEditVal(v=>({...v,contact:e.target.value}))} placeholder="Contact" style={{border:"1px solid #c4b5fd",borderRadius:"5px",padding:"5px 8px",fontSize:"12px",outline:"none",fontFamily:"inherit"}}/>
+                  <input value={xdropEditVal.addr} onChange={e=>setXdropEditVal(v=>({...v,addr:e.target.value}))} placeholder="Address" style={{border:"1px solid #c4b5fd",borderRadius:"5px",padding:"5px 8px",fontSize:"12px",outline:"none",fontFamily:"inherit",gridColumn:"1/-1"}}/>
+                  <input value={xdropEditVal.price} onChange={e=>setXdropEditVal(v=>({...v,price:e.target.value}))} placeholder="Pricing" style={{border:"1px solid #c4b5fd",borderRadius:"5px",padding:"5px 8px",fontSize:"12px",outline:"none",fontFamily:"inherit",gridColumn:"1/-1"}}/>
+                </div>
+                <div style={{display:"flex",gap:"6px"}}>
+                  <button onClick={()=>{const next=[...xdropPartners];next[i]={...xdropEditVal};saveXdropPartners(next);setXdropEditIdx(null);}} style={{background:"#7c3aed",color:"#fff",border:"none",borderRadius:"5px",padding:"4px 12px",fontSize:"11px",fontWeight:"700",cursor:"pointer"}}>Save</button>
+                  <button onClick={()=>setXdropEditIdx(null)} style={{background:"transparent",color:"#64748b",border:"1px solid #e2e8f0",borderRadius:"5px",padding:"4px 10px",fontSize:"11px",cursor:"pointer"}}>Cancel</button>
+                </div>
+              </div>
+            ):(
+              <>
+                <div style={{fontWeight:"700",color:"#1a2e50",fontSize:"13px",marginBottom:"4px",paddingRight:isAdmin?"52px":"0"}}>{x.city}</div>
+                <div style={{color:"#475569",fontSize:"11px",marginBottom:"3px"}}>{x.addr}</div>
+                <div style={{color:"#059669",fontWeight:"600",fontSize:"11px"}}>{x.contact}</div>
+                {x.price&&<div style={{color:"#d97706",fontWeight:"600",fontSize:"10px",marginTop:"3px"}}>{x.price}</div>}
+                {isAdmin&&(
+                  <div style={{position:"absolute",top:"10px",right:"10px",display:"flex",gap:"4px"}}>
+                    <button onClick={()=>{setXdropEditIdx(i);setXdropEditVal({...x});}} style={{background:"transparent",color:"#7c3aed",border:"1px solid #ddd6fe",borderRadius:"4px",padding:"2px 7px",fontSize:"10px",fontWeight:"600",cursor:"pointer"}}>Edit</button>
+                    <button onClick={()=>{if(window.confirm("Remove "+x.city+"?"))saveXdropPartners(xdropPartners.filter((_,j)=>j!==i));}} style={{background:"transparent",color:"#ef4444",border:"1px solid #fecaca",borderRadius:"4px",padding:"2px 6px",fontSize:"10px",cursor:"pointer"}}>✕</button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
 
     {/* ARCHIVE TAB */}
     {activeTab==="archive"&&isAdmin&&(<div style={{background:"#fff",border:"1px solid #d1d5db",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"20px"}}><div style={{fontWeight:"700",fontSize:"14px",color:"#4c1d95",marginBottom:"4px"}}>📦 Archived Weeks</div><div style={{fontSize:"11px",color:"#64748b",marginBottom:"14px"}}>Weeks moved here from the main board.</div>{archivedWeeks.length===0?<div style={{textAlign:"center",padding:"40px",color:"#94a3b8",fontSize:"12px",border:"2px dashed #e2e8f0",borderRadius:"8px"}}>No archived weeks yet. Click 📦 on a week tab to archive it.</div>:archivedWeeks.map((w,i)=>(<div key={i} style={{border:"1px solid #e9d5ff",borderRadius:"10px",padding:"14px",marginBottom:"12px",background:"#faf5ff"}}><div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"10px"}}><span style={{fontWeight:"700",fontSize:"13px",color:"#4c1d95",flex:1}}>{w.label}</span><span style={{fontSize:"10px",color:"#94a3b8"}}>{w.archivedAt}</span><button onClick={()=>{if(!confirm("Restore?"))return;setWeeksAndSave(p=>[w,...p]);setArchivedWeeks(p=>{const n=p.filter((_,j)=>j!==i);localStorage.setItem("fcbv2_archive",JSON.stringify(n));return n;});setActiveTab("weeks");}} style={{background:"#eff6ff",color:"#2563eb",border:"1px solid #bfdbfe",borderRadius:"6px",padding:"4px 10px",fontSize:"11px",fontWeight:"600",cursor:"pointer"}}>Restore</button><button onClick={()=>{if(!confirm("Permanently delete?"))return;setArchivedWeeks(p=>{const n=p.filter((_,j)=>j!==i);localStorage.setItem("fcbv2_archive",JSON.stringify(n));return n;});}} style={{background:"#fee2e2",color:"#dc2626",border:"1px solid #fca5a5",borderRadius:"6px",padding:"4px 10px",fontSize:"11px",fontWeight:"600",cursor:"pointer"}}>Delete</button></div><div style={{display:"flex",gap:"12px",flexWrap:"wrap",fontSize:"11px",color:"#6b7280"}}><span>{(w.groups||[]).length} trailers</span><span>{(w.groups||[]).flatMap(g=>g.loads||[]).length} loads</span><span style={{fontWeight:"700",color:"#059669"}}>${(w.groups||[]).flatMap(g=>g.loads||[]).reduce((s,l)=>s+(parseFloat(l.rate)||0),0).toLocaleString()} gross</span></div></div>))}</div>)}
